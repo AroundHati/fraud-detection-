@@ -10,7 +10,7 @@ Update this file after every completed feature. Any AI assistant reading this fi
 Phase 1 — Foundation
 
 **Last Completed:**
-02 Authentication
+02 Authentication (InsForge backend endpoints corrected)
 
 **Next Milestone:**
 03 Database Initialization
@@ -23,6 +23,7 @@ Phase 1 — Foundation
 
 - [x] 01 Homepage
 - [x] 02 Authentication (login, signup, middleware, auth context, protected routes)
+- [x] 02a InsForge Backend Integration — API endpoints corrected and verified against live instance
 - [ ] 03 Database Initialization
 - [ ] 04 Project Configuration
 
@@ -108,19 +109,28 @@ Phase 1 — Foundation
 - Selected PaddleOCR for healthcare document extraction.
 - Selected ChromaDB for Retrieval-Augmented Generation (RAG).
 - Built the homepage as a static Server Component using token-backed Tailwind CSS and public dashboard imagery.
-- Created custom InsForge client (REST API wrapper) since @insforge/ssr is not publicly available on npm.
+- Created custom InsForge REST client since @insforge/ssr is not publicly available on npm.
 - Used cookie-based session detection for middleware (cookie name: insforge-auth).
 - Login page uses Suspense boundary for useSearchParams() compatibility with Next.js 16.
 - All dashboard pages use mock data with InsForge query builders ready for backend wiring.
 - Analytics page uses inline bar chart (no external charting library needed yet).
+- **InsForge uses `/api/auth/*` paths** (NOT `/auth/v1/*` as originally assumed). Confirmed via live instance testing and official docs at docs.insforge.dev.
+- **InsForge auth requires `Authorization: Bearer <anon_key>`** for all requests including unauthenticated endpoints (registration, login). The `apikey` header alone is insufficient.
+- **InsForge user shape** uses `profile.name` and `profile.avatar_url` (NOT `user_metadata.full_name`).
+- **InsForge response fields** use `accessToken` (NOT `access_token`), and include `csrfToken` for web clients.
+- **Email verification is enabled** on the live InsForge instance (`requireEmailVerification: true`). Registered users must verify email before login.
+- **InsForge DB endpoints** use `/api/database/records/{table}` (NOT `/rest/v1/{table}`).
+- **InsForge storage** uses presigned URL upload strategy via `/api/storage/buckets/{bucket}/upload-strategy`.
 
 ---
 
 # Known Issues
 
 - Next.js 16 reports middleware deprecation warning (recommends "proxy" convention). Works correctly with current implementation.
-- InsForge client is a custom REST API wrapper - may need adjustment if InsForge SDK becomes available.
+- InsForge client is a custom REST API wrapper — may need adjustment if InsForge SDK becomes available on npm.
 - All dashboard page data is mock data. Backend wiring to InsForge database is pending database initialization (Phase 1, Feature 03).
+- **Email verification is required** on the InsForge instance. New users must verify email before they can login. No email verification bypass is available.
+- InsForge anon key is exposed as `NEXT_PUBLIC_INSFORGE_ANON_KEY` — this is by design for browser-side auth, but should be rotated if the project goes to production.
 
 ---
 
@@ -129,3 +139,5 @@ Phase 1 — Foundation
 - The `@insforge/ssr` package is not publicly available on npm. A custom client was built using fetch API patterns matching InsForge's REST API.
 - Auth persistence uses both localStorage (client-side) and cookies (middleware detection).
 - The `insforge-auth` cookie stores the session JSON for server-side middleware verification.
+- InsForge instance URL: `NEXT_PUBLIC_INSFORGE_URL` (configured in `.env.local`).
+- Full InsForge API endpoint reference: see `context/backend-registry.md`.

@@ -1,70 +1,55 @@
-# Memory
+# Memory — InsForge Backend Debugging
 
-## Last Session Summary
+Last updated: 2026-07-10
 
-Completed a comprehensive SaaS transformation of the FraudShield Healthcare Fraud Detection platform. Implemented the entire authentication flow, dashboard layout, and all application pages.
+## What was built
 
-## What Was Done
+- Rewrote `lib/insforge-client.ts` — corrected all InsForge API endpoint paths, response field names, auth header patterns, user object shape, DB query paths, and storage paths
+- Rewrote `lib/insforge-server.ts` — same endpoint corrections as client
+- Updated `hooks/use-auth.tsx` — new User type using `profile.name` instead of `user_metadata.full_name`
+- Updated `hooks/use-user.tsx` — display name reads from `profile.name`
+- Updated `middleware.ts` — cookie field `access_token` → `accessToken`
+- Updated `app/(dashboard)/settings/page.tsx` — reads `profile.name` instead of `full_name`
+- Created `context/backend-registry.md` — complete InsForge API endpoint reference
+- Created `context/development-log.md` — session history
+- Created `context/ml-pipeline.md` — ML pipeline status and architecture
+- Updated `context/progress-tracker.md` — marked InsForge debugging complete
 
-### Authentication System
-- Custom InsForge client (`lib/insforge-client.ts`) using REST API patterns (since @insforge/ssr is not publicly available)
-- Server-side InsForge client (`lib/insforge-server.ts`)
-- Auth context (`hooks/use-auth.tsx`) with signIn, signUp, signOut, refreshUser
-- User hook (`hooks/use-user.tsx`) with initials and display name
-- Middleware (`middleware.ts`) for protected route detection using cookies
-- Login page (`app/(auth)/login/page.tsx`) with Suspense boundary for useSearchParams
-- Signup page (`app/(auth)/signup/page.tsx`) with full name, email, password fields
+## Decisions made
 
-### Landing Page Modifications
-- Removed navigation links (Dashboard, Claims, Investigations, Reports, Analytics, Pricing, About)
-- Removed "Book a Demo" button
-- Kept only: FraudShield logo, "Log In" button (→ /login), "Get Started" button (→ /signup)
-- "Start Investigating" button routes to /dashboard if authenticated, /login if not
+- InsForge uses `/api/auth/*` paths (NOT `/auth/v1/*` as originally assumed)
+- All InsForge requests require `Authorization: Bearer <anon_key>` for unauthenticated endpoints (registration, login) — the `apikey` header alone is insufficient
+- InsForge user object uses `profile.name` and `profile.avatar_url` (NOT `user_metadata.full_name`)
+- InsForge response fields use `accessToken` (NOT `access_token`) and include `csrfToken` for web clients
+- InsForge DB endpoints use `/api/database/records/{table}` (NOT `/rest/v1/{table}`)
+- InsForge storage uses presigned URL upload strategy via `/api/storage/buckets/{bucket}/upload-strategy`
+- Email verification is enabled on the live instance — registered users must verify email before login
 
-### Dashboard Layout
-- Sidebar with 9 nav items (Dashboard, Upload Claim, Analyze Claims, Claims, Investigations, Analytics, Reports, Alerts, Settings) each with Lucide icon
-- Active page highlighting using primary color
-- Top navbar with notification bell (red dot) and user avatar (initials in circle)
-- Avatar dropdown: Profile, Settings, Logout
-- Mobile responsive with slide-out sidebar
+## Problems solved
 
-### All Application Pages
-- **Dashboard** (`/dashboard`): Stats cards, recent claims table, activity feed, risk distribution, investigation status
-- **Upload Claim** (`/upload`): Drag-and-drop file upload, file list with progress, supports CSV/Excel/PDF
-- **Analyze Claims** (`/analyze`): Workflow steps, simulation, results display (fraud probability, risk score, prediction, confidence, AI explanation, evidence)
-- **Claims** (`/claims`): Full table with search, status/risk filters, sortable columns (amount, date, risk)
-- **Investigations** (`/investigations`): Investigation list, agent timeline, evidence summary cards
-- **Reports** (`/reports`): Report list with PDF/CSV export toggle, risk scores, summaries
-- **Analytics** (`/analytics`): KPI cards, bar chart (monthly trends), risk distribution, provider risk scores, diagnosis code distribution
-- **Settings** (`/settings`): Profile form (name, email, organization, role), password change
+- All `/auth/v1/*` endpoints returned 404 — fixed by switching to `/api/auth/*`
+- Registration returned 401 "No token provided" — fixed by sending `Authorization: Bearer <anon_key>` for unauthenticated requests
+- User type mismatch (`user_metadata` vs `profile`) — updated all consuming hooks and pages
+- Cookie field name mismatch (`access_token` vs `accessToken`) — updated middleware
 
-### Foundation Files
-- `lib/utils.ts`: cn, getInitials, formatCurrency, formatDate, getRiskLevel, getRiskColor, getStatusColor
-- `lib/constants.ts`: FRAUD_RISK_THRESHOLD, APP_NAME, PROTECTED_ROUTES, PUBLIC_ROUTES, NAV_ITEMS
-- `types/claim.ts`, `types/investigation.ts`, `types/report.ts`, `types/index.ts`
+## Current state
 
-## Current Project Status
-- TypeScript: passes with no errors
-- ESLint: passes with no warnings
-- Build: succeeds, all 12 routes generated
-- Phase 1: 01 Homepage ✓, 02 Authentication ✓
-- Phase 2: 05 Upload Page UI ✓
-- Phase 3: 09 Dashboard UI ✓, 10 Dashboard Logic (mock) ✓, 11 Claims Search/Filters ✓
-- Phase 4: 12 Investigation Workspace UI ✓
-- Phase 5: 18 Report UI ✓
-- Phase 6: 21 Analytics UI ✓
-- Additional: Analyze page ✓, Settings page ✓
+- TypeScript: 0 errors ✓
+- ESLint: 0 warnings ✓
+- Build: All 12 routes generated ✓
+- InsForge auth endpoints verified against live instance (registration works, login returns 403 for unverified users as expected)
+- All dashboard pages still use mock data — backend wiring pending
+- Email verification flow in UI not yet implemented
 
-## Key Decisions
-- Custom InsForge client built using fetch API since @insforge/ssr is unavailable on npm
-- Cookie-based session detection for middleware (cookie name: insforge-auth)
-- Login page wraps useSearchParams in Suspense for Next.js 16 compatibility
-- All dashboard pages use mock data with InsForge query builders ready for wiring
-- No external charting library — analytics uses inline CSS-based charts
+## Next session starts with
 
-## Next Steps
-- Phase 1: 03 Database Initialization (create InsForge tables), 04 Project Configuration
-- Wire mock data to real InsForge database queries
-- Integrate XGBoost prediction service (xgboost_fraud_model.pkl, label_encoder.pkl, feature_columns.json)
-- Implement LangGraph multi-agent workflow
-- Add OCR processing pipeline
+1. Database initialization (Phase 1, Feature 03) — create InsForge tables (users, claims, documents, investigations, agent_runs, agent_logs, reports)
+2. Wire mock data to real InsForge database queries
+3. Handle email verification flow in the UI (code entry page)
+4. Test full signup → email verify → login → dashboard flow end-to-end
+
+## Open questions
+
+- Should we implement email verification UI (code entry page) before database initialization, or after?
+- The InsForge instance has OAuth providers configured (github, google) — should we add OAuth login to the UI?
+- The `middleware.ts` deprecation warning (recommends "proxy" convention) — should we migrate to the new pattern?

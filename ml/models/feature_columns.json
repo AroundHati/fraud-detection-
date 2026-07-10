@@ -1,0 +1,14 @@
+[
+    "TotalClaims",
+    "TotalReimbursement",
+    "AverageClaimAmount",
+    "TotalDeductible",
+    "UniqueBeneficiaries",
+    "UniqueAttendingPhysicians",
+    "AverageClaimDuration",
+    "InpatientClaims",
+    "OutpatientClaims",
+    "Ratio",
+    "PctBeneficiaries3PlusChronic",
+    "DistinctDiagnosisCodes"
+]
