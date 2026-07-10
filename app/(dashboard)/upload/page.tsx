@@ -7,6 +7,7 @@ import {
   X,
   CheckCircle,
   Loader2,
+  AlertCircle,
   File,
   FileSpreadsheet,
 } from "lucide-react";
@@ -17,6 +18,29 @@ type UploadedFile = {
   id: string;
   status: "pending" | "uploading" | "complete" | "error";
   progress: number;
+  error?: string;
+};
+
+type AnalysisResult = {
+  provider_id: string;
+  prediction: string;
+  fraud_probability: number;
+  confidence: number;
+  risk_level: string;
+  investigation_priority: string;
+  requires_manual_review: boolean;
+  review_reason: string;
+  investigation_score: number;
+};
+
+type AnalysisResponse = {
+  success: boolean;
+  data?: {
+    results: AnalysisResult[];
+    total_providers: number;
+    summary: Record<string, number>;
+  };
+  error?: string;
 };
 
 function getFileIcon(fileName: string) {
@@ -33,9 +57,23 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function getRiskBadgeColor(level: string) {
+  switch (level) {
+    case "High":
+      return "bg-error-light text-error";
+    case "Medium":
+      return "bg-warning-light text-warning";
+    case "Low":
+      return "bg-success-light text-success";
+    default:
+      return "bg-surface-secondary text-text-muted";
+  }
+}
+
 export default function UploadPage() {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [results, setResults] = useState<AnalysisResponse | null>(null);
 
   const addFiles = useCallback((newFiles: FileList | File[]) => {
     const fileArray = Array.from(newFiles);
@@ -46,6 +84,7 @@ export default function UploadPage() {
       progress: 0,
     }));
     setFiles((prev) => [...prev, ...uploaded]);
+    setResults(null);
   }, []);
 
   const handleDragOver = (e: DragEvent) => {
@@ -76,38 +115,61 @@ export default function UploadPage() {
     setFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
-  const simulateUpload = () => {
+  const uploadAndAnalyze = async () => {
+    setResults(null);
+
+    const pendingFiles = files.filter((f) => f.status === "pending");
+    if (pendingFiles.length === 0) return;
+
+    // Mark all pending files as uploading.
     setFiles((prev) =>
       prev.map((f) =>
         f.status === "pending" ? { ...f, status: "uploading" as const } : f,
       ),
     );
 
-    files.forEach((f, index) => {
-      if (f.status === "pending") {
-        let progress = 0;
-        const interval = setInterval(() => {
-          progress += Math.random() * 30;
-          if (progress >= 100) {
-            progress = 100;
-            clearInterval(interval);
-            setFiles((prev) =>
-              prev.map((pf) =>
-                pf.id === f.id
-                  ? { ...pf, status: "complete" as const, progress: 100 }
-                  : pf,
-              ),
-            );
-          } else {
-            setFiles((prev) =>
-              prev.map((pf) =>
-                pf.id === f.id ? { ...pf, progress } : pf,
-              ),
-            );
-          }
-        }, 300 + index * 200);
+    // Upload and analyse each CSV file sequentially.
+    for (const item of pendingFiles) {
+      try {
+        // Validate file type on the client side.
+        if (!item.file.name.toLowerCase().endsWith(".csv")) {
+          throw new Error("Only CSV files are supported");
+        }
+
+        const formData = new FormData();
+        formData.append("file", item.file);
+
+        const response = await fetch("/api/ml/analyze", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data: AnalysisResponse = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || `Analysis failed (${response.status})`);
+        }
+
+        setResults(data);
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === item.id
+              ? { ...f, status: "complete" as const, progress: 100 }
+              : f,
+          ),
+        );
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Upload failed";
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === item.id
+              ? { ...f, status: "error" as const, error: message }
+              : f,
+          ),
+        );
       }
-    });
+    }
   };
 
   return (
@@ -140,14 +202,14 @@ export default function UploadPage() {
           or click to browse your files
         </p>
         <p className="mt-2 text-xs text-text-muted">
-          Supports CSV, Excel (XLSX/XLS), and PDF files
+          Supports CSV files with claim data
         </p>
         <label className="mt-4 inline-flex cursor-pointer items-center justify-center rounded-md border border-border bg-surface px-6 py-2.5 text-sm font-semibold text-text-primary shadow-sm transition-colors hover:bg-surface-secondary">
           Browse Files
           <input
             type="file"
             multiple
-            accept=".csv,.xlsx,.xls,.pdf"
+            accept=".csv"
             onChange={handleFileInput}
             className="hidden"
           />
@@ -161,12 +223,12 @@ export default function UploadPage() {
               Uploaded Files ({files.length})
             </h2>
             <button
-              onClick={simulateUpload}
+              onClick={uploadAndAnalyze}
               disabled={files.every((f) => f.status !== "pending")}
               className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary-dark disabled:opacity-50"
             >
               <Upload className="h-4 w-4" />
-              Upload All
+              Upload & Analyse
             </button>
           </div>
           <div className="divide-y divide-border">
@@ -192,6 +254,9 @@ export default function UploadPage() {
                         />
                       </div>
                     )}
+                    {item.error && (
+                      <p className="mt-1 text-xs text-error">{item.error}</p>
+                    )}
                   </div>
                   <div className="shrink-0">
                     {item.status === "pending" && (
@@ -207,6 +272,9 @@ export default function UploadPage() {
                     )}
                     {item.status === "complete" && (
                       <CheckCircle className="h-5 w-5 text-success" />
+                    )}
+                    {item.status === "error" && (
+                      <AlertCircle className="h-5 w-5 text-error" />
                     )}
                   </div>
                 </div>
@@ -226,6 +294,71 @@ export default function UploadPage() {
             <p className="mt-1 text-sm text-text-secondary">
               Upload healthcare claim documents to begin fraud analysis
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Analysis Results */}
+      {results?.data && (
+        <div className="rounded-xl border border-border bg-surface shadow-sm">
+          <div className="border-b border-border px-6 py-4">
+            <h2 className="text-base font-semibold text-text-primary">
+              Analysis Results
+            </h2>
+            <p className="mt-0.5 text-xs text-text-muted">
+              {results.data.total_providers} provider(s) analysed
+            </p>
+          </div>
+
+          {/* Summary */}
+          <div className="grid grid-cols-3 gap-4 border-b border-border px-6 py-4">
+            {Object.entries(results.data.summary).map(([level, count]) => (
+              <div key={level} className="text-center">
+                <span
+                  className={cn(
+                    "inline-block rounded-full px-3 py-1 text-xs font-semibold",
+                    getRiskBadgeColor(level),
+                  )}
+                >
+                  {count} {level}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Per-provider results */}
+          <div className="divide-y divide-border">
+            {results.data.results.map((r) => (
+              <div key={r.provider_id} className="px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-text-primary">
+                      Provider {r.provider_id}
+                    </p>
+                    <p className="text-xs text-text-muted">
+                      Prediction: {r.prediction} &middot; Confidence:{" "}
+                      {r.confidence.toFixed(1)}%
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                        getRiskBadgeColor(r.risk_level),
+                      )}
+                    >
+                      {r.risk_level}
+                    </span>
+                    <span className="rounded-full bg-surface-secondary px-2.5 py-0.5 text-xs font-semibold text-text-secondary">
+                      {r.investigation_priority}
+                    </span>
+                  </div>
+                </div>
+                <p className="mt-1 text-xs text-text-secondary">
+                  {r.review_reason}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       )}
