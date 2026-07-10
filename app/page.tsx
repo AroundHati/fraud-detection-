@@ -1,15 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
-
-const navItems = [
-  "Dashboard",
-  "Claims",
-  "Investigations",
-  "Reports",
-  "Analytics",
-  "Pricing",
-  "About",
-];
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/use-auth";
 
 const trustBadges = [
   "Explainable AI",
@@ -18,29 +12,25 @@ const trustBadges = [
 ];
 
 const platformStats = [
-  {
-    value: "10k+",
-    label: "Claims Analyzed",
-    marker: "CL",
-  },
-  {
-    value: "98.6%",
-    label: "Detection Accuracy",
-    marker: "DA",
-  },
-  {
-    value: "75%",
-    label: "Investigation Time Saved",
-    marker: "TS",
-  },
-  {
-    value: "24/7",
-    label: "AI-Powered Monitoring",
-    marker: "AM",
-  },
+  { value: "10k+", label: "Claims Analyzed", marker: "CL" },
+  { value: "98.6%", label: "Detection Accuracy", marker: "DA" },
+  { value: "75%", label: "Investigation Time Saved", marker: "TS" },
+  { value: "24/7", label: "AI-Powered Monitoring", marker: "AM" },
 ];
 
 export default function Home() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  const handleStartInvestigating = () => {
+    if (loading) return;
+    if (user) {
+      router.push("/dashboard");
+    } else {
+      router.push("/login");
+    }
+  };
+
   return (
     <main className="min-h-screen overflow-hidden bg-background text-text-primary">
       <header className="border-b border-border bg-surface">
@@ -59,23 +49,15 @@ export default function Home() {
             </span>
           </Link>
 
-          <div className="hidden items-center gap-8 text-sm font-semibold text-text-primary lg:flex">
-            {navItems.map((item) => (
-              <Link key={item} href="#" className="transition-colors hover:text-primary">
-                {item}
-              </Link>
-            ))}
-          </div>
-
           <div className="flex items-center gap-3">
             <Link
               href="/login"
               className="hidden rounded-md border border-border bg-surface px-5 py-2 text-sm font-semibold text-primary shadow-sm transition-colors hover:bg-surface-secondary sm:inline-flex"
             >
-              Log in
+              Log In
             </Link>
             <Link
-              href="/login"
+              href="/signup"
               className="inline-flex rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary-dark"
             >
               Get Started
@@ -101,21 +83,16 @@ export default function Home() {
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-4">
-            <Link
-              href="/login"
-              className="inline-flex items-center justify-center rounded-md bg-primary px-8 py-4 text-sm font-semibold text-primary-foreground shadow-md transition-colors hover:bg-primary-dark"
+            <button
+              onClick={handleStartInvestigating}
+              disabled={loading}
+              className="inline-flex items-center justify-center rounded-md bg-primary px-8 py-4 text-sm font-semibold text-primary-foreground shadow-md transition-colors hover:bg-primary-dark disabled:opacity-50"
             >
               Start Investigating
               <span className="ml-2" aria-hidden="true">
                 -&gt;
               </span>
-            </Link>
-            <Link
-              href="#"
-              className="inline-flex items-center justify-center rounded-md border border-border bg-surface px-8 py-4 text-sm font-semibold text-primary shadow-sm transition-colors hover:bg-surface-secondary"
-            >
-              Book a Demo
-            </Link>
+            </button>
           </div>
 
           <div className="mt-8 flex flex-wrap items-center gap-6">
