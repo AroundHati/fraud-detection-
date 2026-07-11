@@ -8,7 +8,11 @@ Machine learning components for the FraudShield Healthcare Fraud Detection Platf
 
 | Component | Status | Location |
 |-----------|--------|----------|
-| XGBoost fraud prediction | Not implemented | `ml/` |
+| XGBoost fraud prediction | Implemented | `ml/services/predictor.py` |
+| Feature engineering | Implemented | `ml/services/feature_builder.py` |
+| Risk scoring | Implemented | `ml/services/risk_scorer.py` |
+| Explainability engine | Implemented | `ml/services/explainability.py` |
+| FastAPI endpoint | Implemented | `ml/api/analyze.py` |
 | PaddleOCR document extraction | Not implemented | `ocr/` |
 | ChromaDB vector database (RAG) | Not implemented | `rag/` |
 | Gemini reasoning (LLM) | Not implemented | `lib/gemini.ts` |
@@ -21,22 +25,22 @@ Machine learning components for the FraudShield Healthcare Fraud Detection Platf
 ### ML Pipeline Flow
 
 ```
-Healthcare Claim Uploaded
+Healthcare Claims CSV
         │
         ▼
-OCR Document Processing (PaddleOCR)
+FeatureBuilder (12 aggregate features)
         │
         ▼
-Feature Extraction & Preprocessing
+Predictor (XGBoost inference)
         │
         ▼
-XGBoost Fraud Prediction
+RiskScorer (risk level, priority, review flags)
         │
         ▼
-Gemini Reasoning (Explainability)
+ExplainabilityEngine (indicators, summary, recommendations)
         │
         ▼
-Final Fraud Assessment
+Enriched JSON Response
 ```
 
 ---
@@ -95,6 +99,84 @@ export const FRAUD_RISK_THRESHOLD = 0.7;
 The Fraud Intelligence Agent (Phase 4, Feature 16) will call the XGBoost predictor as part of the LangGraph workflow.
 
 ---
+
+## 1b. Explainability Engine
+
+### Purpose
+
+Generate investigator-friendly explanations from engineered features and risk predictions using deterministic rule-based logic (no LLMs).
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `ml/services/explainability.py` | ExplainabilityEngine class and ExplainabilityConfig |
+
+### Input
+
+Receives two inputs per provider:
+- **Engineered feature vector** — the 12-model features from `FeatureBuilder`
+- **Scored prediction** — the enriched dict from `RiskScorer` (includes `risk_level`, `investigation_priority`)
+
+### Output
+
+Three new fields merged into each provider's result dict:
+
+```python
+{
+    "investigation_summary": {
+        "totalClaims": 18,
+        "totalReimbursement": 45230.0,
+        "averageClaimAmount": 2512.78,
+        "inpatientClaims": 9,
+        "outpatientClaims": 9,
+        "uniqueBeneficiaries": 12,
+        "uniquePhysicians": 4
+    },
+    "fraud_indicators": [
+        {
+            "title": "Claim Volume",
+            "status": "normal" | "warning" | "flagged",
+            "severity": "low" | "medium" | "high",
+            "description": "Human-readable explanation"
+        }
+    ],
+    "recommendation": {
+        "level": "Immediate Investigation" | "Manual Review" | "Routine Monitoring",
+        "description": "Why this action is recommended"
+    }
+}
+```
+
+### Fraud Indicators (9 rule-based checks)
+
+| Indicator | Feature(s) | Warning Threshold | Critical Threshold |
+|-----------|-----------|-------------------|-------------------|
+| Claim Volume | TotalClaims | > 500 | > 2000 |
+| Reimbursement Volume | TotalReimbursement | > $500K | > $2M |
+| Average Claim Amount | AverageClaimAmount | > $3K | > $10K |
+| Inpatient Ratio | Ratio | > 2.0 | > 5.0 |
+| Beneficiary Concentration | UniqueBeneficiaries / TotalClaims | < 20% | < 10% |
+| Physician Concentration | UniquePhysicians / TotalClaims | < 10% | < 5% |
+| Chronic Condition Concentration | PctBeneficiaries3PlusChronic | > 40% | > 70% |
+| Diagnosis Diversity | DistinctDiagnosisCodes | > 20 | > 60 |
+| Claim Duration | AverageClaimDuration | > 10 days | > 25 days |
+
+### Recommendation Logic
+
+| Investigation Priority | Recommendation |
+|----------------------|----------------|
+| Critical or Urgent | Immediate Investigation |
+| Standard | Manual Review |
+| Routine | Routine Monitoring |
+
+### Configuration
+
+All thresholds are centralised in `ExplainabilityConfig` (frozen dataclass). Custom configs can be passed to `ExplainabilityEngine(config=...)`.
+
+### Integration Point
+
+Called by `Pipeline.run()` after `RiskScorer.score()`. Each provider result dict is enriched with `investigation_summary`, `fraud_indicators`, and `recommendation` before being returned to the API layer.
 
 ## 2. PaddleOCR Document Processing
 

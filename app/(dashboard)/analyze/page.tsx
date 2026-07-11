@@ -9,7 +9,9 @@ import {
   FileText,
   Shield,
   TrendingUp,
+  ArrowUpRight,
 } from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 type AnalysisStep = {
@@ -241,6 +243,14 @@ export default function AnalyzePage() {
                 ))}
               </div>
             </div>
+
+            <Link
+              href="/investigations/PRV-10234"
+              className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary-dark"
+            >
+              View Investigation Details
+              <ArrowUpRight className="h-4 w-4" />
+            </Link>
           </div>
         )}
 

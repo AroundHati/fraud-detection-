@@ -40,6 +40,11 @@ Never create duplicate components with similar functionality.
 | Reports Page | `app/(dashboard)/reports/page.tsx` | Report list with PDF/CSV export toggle | `/reports` | Active |
 | Analytics Page | `app/(dashboard)/analytics/page.tsx` | KPI cards, bar chart, risk distribution, provider risk, diagnosis codes | `/analytics` | Active |
 | Settings Page | `app/(dashboard)/settings/page.tsx` | Profile form, password change, sidebar navigation | `/settings` | Active |
+| Provider Investigation Page | `app/(dashboard)/investigations/[providerId]/page.tsx` | Detailed provider investigation with summary, fraud indicators, recommendations | `/investigations/[providerId]` | Active |
+| Investigation Header | `components/investigation/InvestigationHeader.tsx` | Provider ID, risk badge, prediction, confidence display | Investigation Details | Active |
+| Investigation Summary Card | `components/investigation/InvestigationSummaryCard.tsx` | Claims, reimbursement, beneficiary stats grid | Investigation Details | Active |
+| Fraud Indicators Card | `components/investigation/FraudIndicatorsCard.tsx` | Explainable fraud reasons with severity badges | Investigation Details | Active |
+| Recommendation Card | `components/investigation/RecommendationCard.tsx` | Risk-based recommendation with action level | Investigation Details | Active |
 
 ---
 
@@ -154,6 +159,77 @@ File: `app/(dashboard)/investigations/page.tsx`
 
 ---
 
+### Investigation Header
+
+File: `components/investigation/InvestigationHeader.tsx`
+Last updated: July 11, 2026
+
+| Property | Class |
+| --- | --- |
+| Back link | `text-sm font-medium text-text-secondary hover:text-primary` |
+| Card | `rounded-xl border border-border bg-surface p-6 shadow-sm` |
+| Risk badge | `rounded-full px-2.5 py-0.5 text-xs font-medium` with `getRiskColor()` tokens |
+| Stat icons | `flex h-8 w-8 items-center justify-center rounded-lg` with token bg |
+
+**Pattern notes:**
+Renders back navigation, provider ID + name, risk level badge, and a 3-column stat row (prediction, confidence, risk score) with colored icon containers.
+
+---
+
+### Investigation Summary Card
+
+File: `components/investigation/InvestigationSummaryCard.tsx`
+Last updated: July 11, 2026
+
+| Property | Class |
+| --- | --- |
+| Card | `rounded-xl border border-border bg-surface p-6 shadow-sm` |
+| Stat item | `flex items-center gap-3 rounded-lg border border-border p-3` |
+| Icon container | `flex h-9 w-9 shrink-0 items-center justify-center rounded-lg` with token bg |
+| Value | `truncate text-sm font-semibold text-text-primary` |
+| Label | `text-xs font-medium text-text-muted` |
+
+**Pattern notes:**
+Responsive grid of claim statistics. Uses `formatCurrency()` from utils for monetary values. Grid is `sm:grid-cols-2 lg:grid-cols-3`.
+
+---
+
+### Fraud Indicators Card
+
+File: `components/investigation/FraudIndicatorsCard.tsx`
+Last updated: July 11, 2026
+
+| Property | Class |
+| --- | --- |
+| Card | `rounded-xl border border-border bg-surface p-6 shadow-sm` |
+| Indicator row | `flex items-start gap-3 rounded-lg border border-border p-3.5` |
+| Status icon | `flex h-7 w-7 shrink-0 items-center justify-center rounded-lg` with status bg |
+| Severity badge | `inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold` |
+| Label | `text-sm font-medium text-text-primary` |
+| Description | `text-sm text-text-secondary` |
+
+**Pattern notes:**
+Each indicator shows a status icon (flagged=red, warning=orange, info=blue), a label with severity badge, and a description. Severity badges use token-backed colors: critical/high=`bg-error-light`, medium=`bg-warning-light`, low=`bg-surface-secondary`.
+
+---
+
+### Recommendation Card
+
+File: `components/investigation/RecommendationCard.tsx`
+Last updated: July 11, 2026
+
+| Property | Class |
+| --- | --- |
+| Card | `rounded-xl border border-border bg-surface p-6 shadow-sm` |
+| Banner | `rounded-lg border p-4` with level-specific border |
+| Icon container | `flex h-10 w-10 shrink-0 items-center justify-center rounded-lg` |
+| Level colors | immediate=`bg-error-light/border-error/20`, manual=`bg-warning-light/border-warning/20`, routine=`bg-success-light/border-success/20` |
+
+**Pattern notes:**
+Single recommendation banner that adapts color and icon based on risk level. Uses `RecommendationLevel` type to select configuration. Includes arrow icon indicating actionability.
+
+---
+
 ## Shared UI Patterns
 
 - Landing navigation: `bg-surface`, `border-b border-border`, `h-16`, `max-w-[1440px]`, `px-6`.
@@ -165,6 +241,10 @@ File: `app/(dashboard)/investigations/page.tsx`
 - Status badge: `rounded-full px-2.5 py-0.5 text-xs font-medium`.
 - Sidebar nav item: `flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors`.
 - Avatar dropdown item: `flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-surface-secondary`.
+- Investigation detail card: `rounded-xl border border-border bg-surface p-6 shadow-sm` with section header `text-base font-semibold text-text-primary`.
+- Fraud indicator row: `flex items-start gap-3 rounded-lg border border-border p-3.5` with status icon container `flex h-7 w-7 shrink-0 items-center justify-center rounded-lg`.
+- Severity badge: `inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold` with token-backed severity colors.
+- Recommendation banner: `rounded-lg border p-4` with level-specific border color and icon container.
 
 ---
 

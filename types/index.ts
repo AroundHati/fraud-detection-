@@ -5,6 +5,12 @@ export type {
   InvestigationStatus,
   InvestigationTimelineStep,
   FraudPrediction,
+  FraudIndicator,
+  FraudIndicatorSeverity,
+  Recommendation,
+  RecommendationLevel,
+  ProviderInvestigationSummary,
+  InvestigationDetail,
 } from "./investigation";
 export type { Report, ReportEvidence } from "./report";
 

@@ -13,7 +13,10 @@ Predictor
 RiskScorer
       │
       ▼
-Return enriched prediction results
+ExplainabilityEngine
+      │
+      ▼
+Return enriched prediction results with explanations
 
 This module owns the orchestration logic.  The API layer calls
 ``Pipeline.run()`` and receives a structured result dictionary — it
@@ -31,6 +34,7 @@ import pandas as pd
 from services.feature_builder import FeatureBuilder, FeatureBuilderError
 from services.predictor import Predictor, PredictorError
 from services.risk_scorer import RiskScorer, RiskConfig, RiskScorerError
+from services.explainability import ExplainabilityEngine, ExplainabilityError
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +94,7 @@ class PipelineError(Exception):
 # ---------------------------------------------------------------------------
 
 class Pipeline:
-    """Orchestrates FeatureBuilder → Predictor → RiskScorer.
+    """Orchestrates FeatureBuilder → Predictor → RiskScorer → ExplainabilityEngine.
 
     Parameters
     ----------
@@ -102,6 +106,7 @@ class Pipeline:
         self._feature_builder = FeatureBuilder()
         self._predictor = Predictor()
         self._risk_scorer = RiskScorer(config=risk_config)
+        self._explainability = ExplainabilityEngine()
 
     @property
     def feature_columns(self) -> List[str]:
@@ -129,12 +134,39 @@ class Pipeline:
         Returns
         -------
         PipelineResult
-            Enriched prediction results with risk metadata, or an
-            error result on failure.
+            Enriched prediction results with risk metadata and
+            explainability, or an error result on failure.
         """
+        # --- 1. Feature engineering ---------------------------------------
         try:
-            predictions = self._predictor.predict(df, group_by=group_by)
-        except (PredictorError, FeatureBuilderError, ValueError) as exc:
+            features_df, provider_ids = self._build_features(
+                df, group_by=group_by
+            )
+        except (FeatureBuilderError, ValueError) as exc:
+            logger.error("[ml/pipeline] Feature building failed: %s", exc)
+            return PipelineResult(success=False, error=str(exc))
+
+        if features_df.empty:
+            logger.info("[ml/pipeline] No features generated")
+            return PipelineResult(
+                success=True, results=[], total_providers=0, summary={}
+            )
+
+        # Convert feature rows to dicts for the explainability engine.
+        features_list: List[Dict[str, Any]] = [
+            row.to_dict() for _, row in features_df.iterrows()
+        ]
+
+        # --- 2. Prediction -----------------------------------------------
+        try:
+            predictions = self._predictor.predict(
+                features_df,
+                group_by=None,
+                provider_ids=(
+                    pd.Series(provider_ids) if provider_ids else None
+                ),
+            )
+        except (PredictorError, ValueError) as exc:
             logger.error("[ml/pipeline] Prediction failed: %s", exc)
             return PipelineResult(success=False, error=str(exc))
 
@@ -144,10 +176,22 @@ class Pipeline:
                 success=True, results=[], total_providers=0, summary={}
             )
 
+        # --- 3. Risk scoring ---------------------------------------------
         try:
             scored = self._risk_scorer.score(predictions)
         except RiskScorerError as exc:
             logger.error("[ml/pipeline] Risk scoring failed: %s", exc)
+            return PipelineResult(success=False, error=str(exc))
+
+        # --- 4. Explainability -------------------------------------------
+        try:
+            explanations = self._explainability.explain_batch(
+                features_list, scored
+            )
+            for item, explanation in zip(scored, explanations):
+                item.update(explanation)
+        except ExplainabilityError as exc:
+            logger.error("[ml/pipeline] Explainability failed: %s", exc)
             return PipelineResult(success=False, error=str(exc))
 
         summary = self._build_summary(scored)
@@ -168,6 +212,25 @@ class Pipeline:
     # ------------------------------------------------------------------
     # Internal
     # ------------------------------------------------------------------
+
+    def _build_features(
+        self,
+        df: pd.DataFrame,
+        *,
+        group_by: Optional[str],
+    ) -> tuple[pd.DataFrame, Optional[list]]:
+        """Build the model feature matrix and extract provider IDs.
+
+        Returns
+        -------
+        (features_df, provider_ids_list)
+        """
+        provider_ids: Optional[list] = None
+        if group_by is not None and group_by in df.columns:
+            provider_ids = list(df[group_by].drop_duplicates())
+
+        features_df = self._feature_builder.build_features(df, group_by=group_by)
+        return features_df, provider_ids
 
     @staticmethod
     def _build_summary(scored: List[Dict[str, Any]]) -> Dict[str, int]:

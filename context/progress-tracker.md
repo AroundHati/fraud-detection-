@@ -81,6 +81,9 @@ Phase 1 — Foundation
 - [x] Dashboard layout (sidebar, top navbar, user avatar dropdown with Profile/Settings/Logout)
 - [x] Auth system (InsForge client, auth context, middleware, protected routes)
 - [x] All pages use design tokens, responsive layout, consistent styling
+- [x] Investigation Details page (`/investigations/[providerId]`) — provider summary, fraud indicators, recommendations, navigation from analyze page
+- [x] ExplainabilityEngine (`ml/services/explainability.py`) — deterministic rule-based fraud indicators, investigation summary, and recommendations from engineered features + risk scores
+- [x] Pipeline integration — ExplainabilityEngine runs after RiskScorer; each provider result now includes `investigation_summary`, `fraud_indicators`, and `recommendation`
 
 ---
 
