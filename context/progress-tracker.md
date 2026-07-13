@@ -7,13 +7,13 @@ Update this file after every completed feature. Any AI assistant reading this fi
 # Current Status
 
 **Current Phase:**
-Phase 1 — Foundation
+Phase 3A — Investigation Details Redesign (In Progress)
 
 **Last Completed:**
-Investigation Repository (SQLite persistence layer)
+Phase 2A — Connected Workspace (commit `8ae0b6b`, tagged `v2.0-connected-workspace`)
 
 **Next Milestone:**
-Pipeline integration — wire InvestigationRepository into `Pipeline.run()` and FastAPI `analyze.py`
+Complete Phase 3A Investigation Details redesign, then commit to feature/fraud-analysis
 
 ---
 
@@ -24,15 +24,15 @@ Pipeline integration — wire InvestigationRepository into `Pipeline.run()` and 
 - [x] 01 Homepage
 - [x] 02 Authentication (login, signup, middleware, auth context, protected routes)
 - [x] 02a InsForge Backend Integration — API endpoints corrected and verified against live instance
-- [ ] 03 Database Initialization
-- [ ] 04 Project Configuration
+- [x] 03 Database Initialization — SQLite via Investigation Repository (`storage/fraudshield.db`)
+- [x] 04 Project Configuration
 
 ---
 
 ## Phase 2 — Claim Management
 
 - [x] 05 Claim Upload Page — Full UI (drag-and-drop, file list, upload simulation)
-- [ ] 06 Claim Upload Logic
+- [x] 06 Claim Upload Logic — Wired to `/api/ml/analyze` with file upload
 - [ ] 07 OCR Document Processing
 - [ ] 08 Claim Review & Validation
 
@@ -40,17 +40,43 @@ Pipeline integration — wire InvestigationRepository into `Pipeline.run()` and 
 
 ## Phase 3 — Dashboard & Claim Management
 
-- [x] 09 Dashboard — Redesigned around investigation workflow (welcome, latest investigation, quick actions, recent investigations, system status; removed all placeholder data)
-- [x] 10 Dashboard Logic (mock data implemented, InsForge wiring pending)
+- [x] 09 Dashboard — Connected to real data from Investigation Repository
+- [x] 10 Dashboard Logic — Real stats, recent investigations, empty states
 - [x] 11 Claim Search, Filters & Pagination (search, status/risk filters, sorting)
+
+---
+
+## Phase 2A — Connected Workspace (Committed as v2.0-connected-workspace)
+
+- [x] Backend — `ml/api/analyze.py`: POST `/api/ml/analyze` persists to Investigation Repository; GET `/api/ml/investigations` list all; GET `/api/ml/investigations/stats` aggregate counts; GET `/api/ml/investigations/{id}` fetch single
+- [x] Frontend API client — `lib/api.ts`: `listInvestigations`, `getInvestigation`, `getInvestigationStats`, typed interfaces
+- [x] Dashboard — Real stats from repo, recent investigations, empty states
+- [x] Upload — Saves to repository after analysis, shows investigation ID link
+- [x] Investigations — Loads from SQLite via `listInvestigations()`, uses DataTable
+- [x] Investigation Detail — Fetches by ID from API, maps to `InvestigationDetail` type
+- [x] Reports — Shows completed investigations filtered from `listInvestigations()`
+
+---
+
+## Phase 3A — Investigation Details Redesign (In Progress)
+
+- [x] Redesign page to work directly with real API data structure
+- [x] Two-column summary (Provider Info + AI Assessment)
+- [x] Risk distribution cards (High/Medium/Low counts)
+- [x] AI Summary section
+- [x] Flagged Providers section (medium/high risk)
+- [x] Full provider results table
+- [x] Investigation Timeline
+- [x] Recommendation with Generate Report action
 
 ---
 
 ## Phase 4 — AI Fraud Investigation
 
 - [x] 12 Investigation Workspace — Full UI (investigation list, timeline, evidence panel)
+- [x] Investigation Agent — `ml/services/investigation_agent.py` + `ml/api/investigate.py` + `AIInvestigationAssistant.tsx`
 - [ ] 13 LangGraph Multi-Agent Workflow
-- [ ] 14 Investigation Agent
+- [ ] 14 Investigation Agent — (Template-based complete; LLM-based pending)
 - [ ] 15 Knowledge Agent (RAG)
 - [ ] 16 Fraud Intelligence Agent
 - [ ] 17 Report Agent
@@ -75,19 +101,19 @@ Pipeline integration — wire InvestigationRepository into `Pipeline.run()` and 
 
 ## Additional Features Completed
 
-- [x] Analyze Claims page (workflow simulation, prediction results display)
+- [x] UI Foundation Redesign — Removed all fake/mock data, deleted dead pages/components, created `components/ui/` library (Button, EmptyState, PageHeader, SectionCard, StatusBadge, DataTable, LoadingState)
+- [x] Sidebar — Exactly 4 items: Dashboard, Upload Claims, Investigations, Reports
+- [x] Auth Redirect — `middleware.ts` covers `/`, landing page cleaned
+- [x] Investigation Details page (`/investigations/[providerId]`) — Redesigned to work with real API data, two-column summary, risk distribution, flagged providers, full results table, timeline, recommendation
+- [x] ExplainabilityEngine (`ml/services/explainability.py`) — deterministic rule-based fraud indicators, investigation summary, and recommendations from engineered features + risk scores
+- [x] Pipeline integration — ExplainabilityEngine runs after RiskScorer; each provider result now includes `investigation_summary`, `fraud_indicators`, and `recommendation`
+- [x] Investigation Repository (`ml/services/investigation_repository.py`) — SQLite persistence layer using Repository Pattern; auto-creates `storage/fraudshield.db`; full CRUD (create, save, get, list, get_latest, update_status, delete, exists); `INV-YYYYMMDD-NNNN` ID generation; dataclass models; parameterised queries; 20 unit tests passing
+- [x] Alerts page (`/alerts`) — dedicated alerts page with severity badges, provider IDs, timestamps, read/unread status; fixed routing (was incorrectly pointing to `/dashboard`)
 - [x] Settings page (profile form, password change)
 - [x] Landing page modification (removed nav links, Book Demo; kept logo, auth buttons, Start Investigating)
 - [x] Dashboard layout (sidebar, top navbar, user avatar dropdown with Profile/Settings/Logout)
 - [x] Auth system (InsForge client, auth context, middleware, protected routes)
 - [x] All pages use design tokens, responsive layout, consistent styling
-- [x] Investigation Details page (`/investigations/[providerId]`) — provider summary, fraud indicators, recommendations, navigation from analyze page
-- [x] ExplainabilityEngine (`ml/services/explainability.py`) — deterministic rule-based fraud indicators, investigation summary, and recommendations from engineered features + risk scores
-- [x] Pipeline integration — ExplainabilityEngine runs after RiskScorer; each provider result now includes `investigation_summary`, `fraud_indicators`, and `recommendation`
-- [x] AI Investigation Assistant — deterministic template-based service (`ml/services/investigation_agent.py`) with FastAPI endpoint (`POST /api/ml/investigate`) and enterprise copilot chat UI (`components/investigation/AIInvestigationAssistant.tsx`)
-- [x] Alerts page (`/alerts`) — dedicated alerts page with severity badges, provider IDs, timestamps, read/unread status; fixed routing (was incorrectly pointing to `/dashboard`)
-- [x] Dashboard redesign — removed all fake statistics and template content; replaced with workflow-oriented layout: personalized welcome, latest investigation card, quick actions grid, recent investigations list, system status indicators
-- [x] Investigation Repository (`ml/services/investigation_repository.py`) — SQLite persistence layer using Repository Pattern; auto-creates `storage/fraudshield.db`; full CRUD (create, save, get, list, get_latest, update_status, delete, exists); `INV-YYYYMMDD-NNNN` ID generation; dataclass models; parameterised queries; 20 unit tests passing
 
 ---
 
