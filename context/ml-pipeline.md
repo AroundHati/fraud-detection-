@@ -13,6 +13,7 @@ Machine learning components for the FraudShield Healthcare Fraud Detection Platf
 | Risk scoring | Implemented | `ml/services/risk_scorer.py` |
 | Explainability engine | Implemented | `ml/services/explainability.py` |
 | FastAPI endpoint | Implemented | `ml/api/analyze.py` |
+| Investigation repository (SQLite) | Implemented | `ml/services/investigation_repository.py` |
 | PaddleOCR document extraction | Not implemented | `ocr/` |
 | ChromaDB vector database (RAG) | Not implemented | `rag/` |
 | Gemini reasoning (LLM) | Not implemented | `lib/gemini.ts` |
@@ -177,6 +178,101 @@ All thresholds are centralised in `ExplainabilityConfig` (frozen dataclass). Cus
 ### Integration Point
 
 Called by `Pipeline.run()` after `RiskScorer.score()`. Each provider result dict is enriched with `investigation_summary`, `fraud_indicators`, and `recommendation` before being returned to the API layer.
+
+---
+
+## 1c. Investigation Repository (SQLite Persistence)
+
+### Purpose
+
+Persist completed fraud investigations to disk using SQLite, providing the data foundation for the dashboard, investigation history, reports, analytics and AI Investigation Assistant.
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `ml/services/investigation_repository.py` | Repository class with all CRUD operations |
+| `storage/fraudshield.db` | SQLite database (auto-created) |
+
+### Architecture — Repository Pattern
+
+The repository implements the Repository Pattern: all consumers interact through a fixed public API (`get`, `list`, `save`, `delete`, …) and never import `sqlite3`. This means the storage backend can be swapped (e.g. to PostgreSQL) by replacing only the repository class — no changes to callers.
+
+```
+Pipeline / API Layer
+        │
+        ▼
+InvestigationRepository  ← this is the only interface callers see
+        │
+        ▼
+sqlite3 (stdlib)         ← hidden behind the repository
+```
+
+### Database Schema
+
+```sql
+CREATE TABLE investigations (
+    investigation_id   TEXT PRIMARY KEY,
+    created_at         TEXT NOT NULL,
+    updated_at         TEXT NOT NULL,
+    uploaded_filename  TEXT,
+    status             TEXT NOT NULL DEFAULT 'pending',
+    provider_count     INTEGER NOT NULL DEFAULT 0,
+    high_risk          INTEGER NOT NULL DEFAULT 0,
+    medium_risk        INTEGER NOT NULL DEFAULT 0,
+    low_risk           INTEGER NOT NULL DEFAULT 0,
+    summary_json       TEXT,
+    results_json       TEXT
+)
+```
+
+- `summary_json` and `results_json` store complex objects serialised to JSON strings.
+- The uploaded CSV is never stored — only processed investigation results.
+- Timestamps use ISO-8601 strings.
+
+### Investigation IDs
+
+Generated server-side in the format `INV-YYYYMMDD-NNNN` (e.g. `INV-20260713-0001`). Each ID is guaranteed unique within the database via the `PRIMARY KEY` constraint.
+
+### Public API
+
+| Method | Description |
+|--------|-------------|
+| `initialize_database()` | Create storage directory and table if missing |
+| `create_investigation(data)` | Insert a new investigation, auto-generate ID |
+| `save(investigation)` | Overwrite an existing investigation record |
+| `get(investigation_id)` | Fetch by ID |
+| `list()` | All investigations, newest first |
+| `get_latest()` | Most recently created, or `None` |
+| `update_status(id, status)` | Update only the status field |
+| `delete(investigation_id)` | Remove by ID |
+| `exists(investigation_id)` | Check existence |
+
+### Validation
+
+- `investigation_id` format: `INV-YYYYMMDD-NNNN`
+- `status` must be one of: `pending`, `running`, `completed`, `failed`
+- All count fields (`provider_count`, `high_risk`, `medium_risk`, `low_risk`) must be non-negative integers
+
+### Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| SQLite via stdlib `sqlite3` | Zero dependencies, file-based, sufficient for single-server deployment |
+| Repository Pattern | Enables future PostgreSQL swap without changing callers |
+| No ORM | Keeps the dependency footprint minimal; raw SQL is explicit and debuggable |
+| ISO-8601 timestamps | Portable, sortable, and JSON-friendly |
+| WAL journal mode | Improves concurrent read performance |
+
+### Future Compatibility
+
+To migrate to PostgreSQL, create a new class implementing the same method signatures. No caller needs to know which backend is in use.
+
+### Integration Point
+
+Pipeline integration (wiring the repository into `Pipeline.run()` and the FastAPI `analyze.py` endpoint) will happen in the next task. The repository is currently standalone and fully functional.
+
+---
 
 ## 2. PaddleOCR Document Processing
 
@@ -387,6 +483,7 @@ The LangGraph workflow is triggered via API route `/api/investigation/start` (Ph
 | Phase | Feature | Component | Status |
 |-------|---------|-----------|--------|
 | Phase 1 | 04 Project Configuration | All ML setup | Pending |
+| -- | Investigation Repository | SQLite persistence layer | Implemented |
 | Phase 2 | 07 OCR Document Processing | PaddleOCR | Pending |
 | Phase 4 | 13 LangGraph Multi-Agent Workflow | LangGraph | Pending |
 | Phase 4 | 14 Investigation Agent | Claim analysis | Pending |

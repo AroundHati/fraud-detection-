@@ -11,6 +11,8 @@ export type {
   RecommendationLevel,
   ProviderInvestigationSummary,
   InvestigationDetail,
+  InvestigationChatMessage,
+  ChatMessageRole,
 } from "./investigation";
 export type { Report, ReportEvidence } from "./report";
 

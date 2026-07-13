@@ -32,7 +32,7 @@ Never create duplicate components with similar functionality.
 | Dashboard Layout | `components/layout/DashboardLayout.tsx` | Sidebar + top navbar + avatar dropdown layout wrapper | All `/dashboard/*` routes | Active |
 | Sidebar | `components/layout/Sidebar.tsx` | Standalone sidebar component (unused, DashboardLayout has inline sidebar) | — | Deprecated |
 | Top Navbar | `components/layout/TopNavbar.tsx` | Standalone top navbar (unused, DashboardLayout has inline navbar) | — | Deprecated |
-| Dashboard Page | `app/(dashboard)/dashboard/page.tsx` | Stats cards, recent claims table, activity feed, risk distribution charts | `/dashboard` | Active |
+| Dashboard Page | `app/(dashboard)/dashboard/page.tsx` | Welcome section, latest investigation, quick actions, recent investigations, system status | `/dashboard` | Active |
 | Upload Page | `app/(dashboard)/upload/page.tsx` | Drag-and-drop file upload with progress indicators | `/upload` | Active |
 | Analyze Page | `app/(dashboard)/analyze/page.tsx` | AI analysis workflow with step-by-step progress and results display | `/analyze` | Active |
 | Claims Page | `app/(dashboard)/claims/page.tsx` | Claims table with search, status/risk filters, sortable columns | `/claims` | Active |
@@ -40,11 +40,13 @@ Never create duplicate components with similar functionality.
 | Reports Page | `app/(dashboard)/reports/page.tsx` | Report list with PDF/CSV export toggle | `/reports` | Active |
 | Analytics Page | `app/(dashboard)/analytics/page.tsx` | KPI cards, bar chart, risk distribution, provider risk, diagnosis codes | `/analytics` | Active |
 | Settings Page | `app/(dashboard)/settings/page.tsx` | Profile form, password change, sidebar navigation | `/settings` | Active |
+| Alerts Page | `app/(dashboard)/alerts/page.tsx` | Investigation alerts with severity, provider ID, timestamp, read/unread status | `/alerts` | Active |
 | Provider Investigation Page | `app/(dashboard)/investigations/[providerId]/page.tsx` | Detailed provider investigation with summary, fraud indicators, recommendations | `/investigations/[providerId]` | Active |
 | Investigation Header | `components/investigation/InvestigationHeader.tsx` | Provider ID, risk badge, prediction, confidence display | Investigation Details | Active |
 | Investigation Summary Card | `components/investigation/InvestigationSummaryCard.tsx` | Claims, reimbursement, beneficiary stats grid | Investigation Details | Active |
 | Fraud Indicators Card | `components/investigation/FraudIndicatorsCard.tsx` | Explainable fraud reasons with severity badges | Investigation Details | Active |
 | Recommendation Card | `components/investigation/RecommendationCard.tsx` | Risk-based recommendation with action level | Investigation Details | Active |
+| AI Investigation Assistant | `components/investigation/AIInvestigationAssistant.tsx` | Enterprise copilot chat for investigating providers | Investigation Details | Active |
 
 ---
 
@@ -119,17 +121,26 @@ Auth pages use a two-column split layout. The left column shows FraudShield bran
 
 ## Dashboard Components
 
-### Dashboard Stats Cards
+### Dashboard Page
 
 File: `app/(dashboard)/dashboard/page.tsx`
+Last updated: July 13, 2026
 
 | Property | Class |
 | --- | --- |
-| Card | `rounded-xl border border-border bg-surface p-6 shadow-sm` |
-| Icon container | `flex h-10 w-10 items-center justify-center rounded-lg` |
-| Value | `text-2xl font-bold text-text-primary` |
-| Label | `text-sm font-medium text-text-secondary` |
-| Trend indicator | `text-xs font-semibold text-success` / `text-error` |
+| Welcome card | `rounded-xl border border-border bg-surface p-6 shadow-sm` |
+| Quick action card | `rounded-xl border border-border bg-surface p-5 shadow-sm hover:border-primary/20 hover:shadow-md` |
+| Quick action icon | `flex h-11 w-11 items-center justify-center rounded-lg` with token bg |
+| Quick action label | `text-sm font-semibold text-text-primary group-hover:text-primary` |
+| Empty state icon | `flex h-14 w-14 items-center justify-center rounded-xl bg-surface-secondary` |
+| Empty state title | `text-base font-semibold text-text-primary` |
+| Empty state description | `max-w-sm text-sm text-text-secondary` |
+| System status card | `rounded-xl border border-border bg-surface p-5 shadow-sm` |
+| System status indicator | `h-2 w-2 rounded-full bg-success` with `text-xs font-medium text-text-secondary` |
+| Section title | `text-base font-semibold text-text-primary` |
+
+**Pattern notes:**
+The dashboard is the operational home page for investigators. It replaces template statistics with workflow-oriented sections: welcome message (personalized via `useUser()`), latest investigation card (empty state until persistence is wired), four quick action cards navigating to core pages, recent investigations list (empty state), and system status cards showing ML model, FastAPI, AI assistant, and auth health. No hardcoded numerical data is displayed.
 
 ---
 
@@ -230,6 +241,29 @@ Single recommendation banner that adapts color and icon based on risk level. Use
 
 ---
 
+### AI Investigation Assistant
+
+File: `components/investigation/AIInvestigationAssistant.tsx`
+Last updated: July 13, 2026
+
+| Property | Class |
+| --- | --- |
+| Container | `rounded-xl border border-border bg-surface shadow-sm` |
+| Header | `border-b border-border px-6 py-4` with icon `flex h-9 w-9 items-center justify-center rounded-lg bg-primary-light` |
+| Chat area | `flex h-[400px] flex-col overflow-y-auto` |
+| User message | `rounded-lg border border-border bg-surface-secondary px-4 py-3` |
+| Assistant message | `rounded-lg border border-border bg-surface px-4 py-3` |
+| Source badge | `inline-flex items-center rounded-full bg-primary-light px-2 py-0.5 text-[10px] font-medium text-primary` |
+| Input | `h-11 rounded-md border border-border bg-surface px-4 text-sm` |
+| Send button | `h-11 w-11 rounded-md bg-primary text-primary-foreground` |
+| Suggested question | `rounded-lg border border-border bg-surface p-3 hover:border-primary/20 hover:bg-primary-light/30` |
+| Loading dots | `h-1.5 w-1.5 animate-pulse rounded-full bg-primary` |
+
+**Pattern notes:**
+Enterprise copilot-style chat interface. Renders a header with bot icon, a scrollable message area with user/assistant bubbles, source badges for data references, and a text input with send button. Empty state shows suggested starter questions. The component calls the Python InvestigationAgent via FastAPI at `POST /api/ml/investigate`.
+
+---
+
 ## Shared UI Patterns
 
 - Landing navigation: `bg-surface`, `border-b border-border`, `h-16`, `max-w-[1440px]`, `px-6`.
@@ -245,6 +279,7 @@ Single recommendation banner that adapts color and icon based on risk level. Use
 - Fraud indicator row: `flex items-start gap-3 rounded-lg border border-border p-3.5` with status icon container `flex h-7 w-7 shrink-0 items-center justify-center rounded-lg`.
 - Severity badge: `inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold` with token-backed severity colors.
 - Recommendation banner: `rounded-lg border p-4` with level-specific border color and icon container.
+- AI Investigation Assistant: `rounded-xl border border-border bg-surface shadow-sm` with header `border-b border-border px-6 py-4`, chat area `flex h-[400px] flex-col overflow-y-auto`, and suggested questions as `rounded-lg border border-border bg-surface p-3` with hover states.
 
 ---
 

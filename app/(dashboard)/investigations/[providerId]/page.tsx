@@ -1,88 +1,36 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { InvestigationHeader } from "@/components/investigation/InvestigationHeader";
 import { InvestigationSummaryCard } from "@/components/investigation/InvestigationSummaryCard";
 import { FraudIndicatorsCard } from "@/components/investigation/FraudIndicatorsCard";
 import { RecommendationCard } from "@/components/investigation/RecommendationCard";
+import { AIInvestigationAssistant } from "@/components/investigation/AIInvestigationAssistant";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { Button } from "@/components/ui/Button";
+import { getInvestigation } from "@/lib/api";
+import type { Investigation } from "@/lib/api";
 import type { InvestigationDetail } from "@/types";
 
-const mockInvestigationDetails: Record<string, InvestigationDetail> = {
-  "PRV-10234": {
-    provider: {
-      provider_id: "PRV-10234",
-      provider_name: "Metro General Hospital",
-      risk_score: 82,
-      prediction: "Suspicious",
-      confidence: 0.92,
-      total_claims: 1247,
-      total_reimbursement: 4832150,
-      average_claim_amount: 3875,
-      inpatient_claims: 892,
-      outpatient_claims: 355,
-      unique_beneficiaries: 412,
-      unique_physicians: 28,
-    },
-    fraud_indicators: [
-      {
-        id: "ind-1",
-        label: "High reimbursement volume",
-        description:
-          "Total reimbursement for this provider is 340% above the regional average for similar facilities, indicating potentially inflated billing.",
-        severity: "critical",
-        status: "flagged",
-      },
-      {
-        id: "ind-2",
-        label: "Excessive inpatient ratio",
-        description:
-          "Inpatient claims account for 71.5% of all claims, significantly exceeding the expected 50-60% range for this facility type.",
-        severity: "high",
-        status: "flagged",
-      },
-      {
-        id: "ind-3",
-        label: "Large diagnosis diversity",
-        description:
-          "The provider submits claims across an unusually wide range of diagnosis codes, suggesting potential upcoding or unbundling.",
-        severity: "high",
-        status: "warning",
-      },
-      {
-        id: "ind-4",
-        label: "High chronic condition concentration",
-        description:
-          "A disproportionate number of claims involve chronic condition diagnoses, which may indicate systematic overreporting.",
-        severity: "medium",
-        status: "warning",
-      },
-      {
-        id: "ind-5",
-        label: "Elevated claim frequency",
-        description:
-          "Claim submission frequency is 2.1x higher than comparable providers in the same network.",
-        severity: "medium",
-        status: "info",
-      },
-    ],
-    recommendation: {
-      level: "immediate_investigation",
-      label: "Immediate Investigation",
-      description:
-        "This provider exhibits multiple high-severity fraud indicators. Recommend launching a full investigation with on-site audit and detailed billing review within 48 hours.",
-    },
-  },
-};
-
-function getDefaultDetail(providerId: string): InvestigationDetail {
+function mapToDetail(inv: Investigation): InvestigationDetail {
+  const results = inv.results ?? [];
   return {
     provider: {
-      provider_id: providerId,
-      provider_name: "Unknown Provider",
-      risk_score: 0,
-      prediction: "Pending",
-      confidence: 0,
-      total_claims: 0,
+      provider_id: inv.investigation_id,
+      provider_name: inv.uploaded_filename || "Unknown source",
+      risk_score:
+        results.length > 0
+          ? results.reduce((s, r) => s + ((r as Record<string, unknown>).fraud_probability as number || 0), 0) / results.length
+          : 0,
+      prediction: inv.status === "completed" ? "Analyzed" : inv.status,
+      confidence:
+        results.length > 0
+          ? results.reduce((s, r) => s + ((r as Record<string, unknown>).confidence as number || 0), 0) / results.length
+          : 0,
+      total_claims: results.length,
       total_reimbursement: 0,
       average_claim_amount: 0,
       inpatient_claims: 0,
@@ -90,33 +38,103 @@ function getDefaultDetail(providerId: string): InvestigationDetail {
       unique_beneficiaries: 0,
       unique_physicians: 0,
     },
-    fraud_indicators: [],
+    fraud_indicators: results
+      .filter((r) => (r as Record<string, unknown>).risk_level === "High")
+      .map((r, idx) => {
+        const rec = r as Record<string, unknown>;
+        return {
+          id: `fi-${idx}`,
+          label: `Provider ${rec.provider_id}`,
+          description: (rec.review_reason as string) || "High fraud probability detected",
+          severity: "high" as const,
+          status: "flagged" as const,
+        };
+      }),
     recommendation: {
-      level: "routine_monitoring",
-      label: "No Data Available",
+      level:
+        inv.high_risk > 0
+          ? "immediate_investigation"
+          : "routine_monitoring",
+      label:
+        inv.high_risk > 0
+          ? "Immediate Investigation"
+          : "Routine Monitoring",
       description:
-        "No investigation data found for this provider. Analysis data will be available once the prediction pipeline completes.",
+        inv.high_risk > 0
+          ? `${inv.high_risk} provider(s) flagged as high risk requiring immediate investigation.`
+          : "All providers within normal risk thresholds.",
     },
   };
 }
 
 export default function ProviderInvestigationPage() {
   const params = useParams();
-  const providerId = params.providerId as string;
+  const router = useRouter();
+  const investigationId = params.providerId as string;
 
-  const detail =
-    mockInvestigationDetails[providerId] ?? getDefaultDetail(providerId);
+  const [detail, setDetail] = useState<InvestigationDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getInvestigation(investigationId)
+      .then((inv) => setDetail(mapToDetail(inv)))
+      .catch((err) => {
+        if (err.message === "not_found") setError("not_found");
+        else setError("load_error");
+      })
+      .finally(() => setLoading(false));
+  }, [investigationId]);
+
+  const hasData = detail !== null && detail.provider.prediction !== "Pending";
 
   return (
     <div className="space-y-6">
-      <InvestigationHeader provider={detail.provider} />
+      <button
+        onClick={() => router.back()}
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back
+      </button>
 
-      <InvestigationSummaryCard provider={detail.provider} />
+      {loading && <LoadingState message="Loading investigation..." />}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-        <FraudIndicatorsCard indicators={detail.fraud_indicators} />
-        <RecommendationCard recommendation={detail.recommendation} />
-      </div>
+      {!loading && error === "not_found" && (
+        <EmptyState
+          title="Investigation not found"
+          description={`No investigation found with ID ${investigationId}.`}
+          action={
+            <Button onClick={() => router.push("/upload")}>
+              Upload Claims
+            </Button>
+          }
+        />
+      )}
+
+      {!loading && error && error !== "not_found" && (
+        <EmptyState
+          title="Failed to load investigation"
+          description="An error occurred while loading the investigation data."
+          action={
+            <Button onClick={() => router.push("/investigations")}>
+              Back to Investigations
+            </Button>
+          }
+        />
+      )}
+
+      {!loading && !error && hasData && detail && (
+        <>
+          <InvestigationHeader provider={detail.provider} />
+          <InvestigationSummaryCard provider={detail.provider} />
+          <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
+            <FraudIndicatorsCard indicators={detail.fraud_indicators} />
+            <RecommendationCard recommendation={detail.recommendation} />
+          </div>
+          <AIInvestigationAssistant detail={detail} />
+        </>
+      )}
     </div>
   );
 }

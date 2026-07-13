@@ -3,12 +3,8 @@ import { type NextRequest, NextResponse } from "next/server";
 const PROTECTED_ROUTES = [
   "/dashboard",
   "/upload",
-  "/analyze",
-  "/claims",
   "/investigations",
   "/reports",
-  "/analytics",
-  "/settings",
 ];
 
 const PUBLIC_ROUTES = ["/", "/login", "/signup", "/auth/callback"];
@@ -28,7 +24,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (isPublicRoute && pathname !== "/") {
+  if (isPublicRoute) {
     const sessionCookie = request.cookies.get("insforge-auth");
     if (sessionCookie) {
       try {
@@ -72,12 +68,9 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/upload/:path*",
-    "/analyze/:path*",
-    "/claims/:path*",
     "/investigations/:path*",
     "/reports/:path*",
-    "/analytics/:path*",
-    "/settings/:path*",
+    "/",
     "/login",
     "/signup",
     "/auth/callback",

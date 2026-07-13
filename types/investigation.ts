@@ -72,3 +72,13 @@ export type InvestigationDetail = {
   fraud_indicators: FraudIndicator[];
   recommendation: Recommendation;
 };
+
+export type ChatMessageRole = "user" | "assistant";
+
+export type InvestigationChatMessage = {
+  id: string;
+  role: ChatMessageRole;
+  content: string;
+  sources?: string[];
+  timestamp: Date;
+};

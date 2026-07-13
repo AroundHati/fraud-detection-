@@ -7,24 +7,15 @@ export const APP_DESCRIPTION =
 export const PROTECTED_ROUTES = [
   "/dashboard",
   "/upload",
-  "/analyze",
-  "/claims",
   "/investigations",
   "/reports",
-  "/analytics",
-  "/settings",
 ] as const;
 
 export const PUBLIC_ROUTES = ["/", "/login", "/signup"] as const;
 
 export const NAV_ITEMS = [
   { label: "Dashboard", href: "/dashboard" },
-  { label: "Upload Claim", href: "/upload" },
-  { label: "Analyze Claims", href: "/analyze" },
-  { label: "Claims", href: "/claims" },
+  { label: "Upload Claims", href: "/upload" },
   { label: "Investigations", href: "/investigations" },
-  { label: "Analytics", href: "/analytics" },
   { label: "Reports", href: "/reports" },
-  { label: "Alerts", href: "/dashboard" },
-  { label: "Settings", href: "/settings" },
 ] as const;

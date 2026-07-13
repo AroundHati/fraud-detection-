@@ -10,10 +10,10 @@ Update this file after every completed feature. Any AI assistant reading this fi
 Phase 1 — Foundation
 
 **Last Completed:**
-02 Authentication (InsForge backend endpoints corrected)
+Investigation Repository (SQLite persistence layer)
 
 **Next Milestone:**
-03 Database Initialization
+Pipeline integration — wire InvestigationRepository into `Pipeline.run()` and FastAPI `analyze.py`
 
 ---
 
@@ -40,7 +40,7 @@ Phase 1 — Foundation
 
 ## Phase 3 — Dashboard & Claim Management
 
-- [x] 09 Dashboard — Full UI (stats cards, recent claims table, activity feed, charts)
+- [x] 09 Dashboard — Redesigned around investigation workflow (welcome, latest investigation, quick actions, recent investigations, system status; removed all placeholder data)
 - [x] 10 Dashboard Logic (mock data implemented, InsForge wiring pending)
 - [x] 11 Claim Search, Filters & Pagination (search, status/risk filters, sorting)
 
@@ -84,6 +84,10 @@ Phase 1 — Foundation
 - [x] Investigation Details page (`/investigations/[providerId]`) — provider summary, fraud indicators, recommendations, navigation from analyze page
 - [x] ExplainabilityEngine (`ml/services/explainability.py`) — deterministic rule-based fraud indicators, investigation summary, and recommendations from engineered features + risk scores
 - [x] Pipeline integration — ExplainabilityEngine runs after RiskScorer; each provider result now includes `investigation_summary`, `fraud_indicators`, and `recommendation`
+- [x] AI Investigation Assistant — deterministic template-based service (`ml/services/investigation_agent.py`) with FastAPI endpoint (`POST /api/ml/investigate`) and enterprise copilot chat UI (`components/investigation/AIInvestigationAssistant.tsx`)
+- [x] Alerts page (`/alerts`) — dedicated alerts page with severity badges, provider IDs, timestamps, read/unread status; fixed routing (was incorrectly pointing to `/dashboard`)
+- [x] Dashboard redesign — removed all fake statistics and template content; replaced with workflow-oriented layout: personalized welcome, latest investigation card, quick actions grid, recent investigations list, system status indicators
+- [x] Investigation Repository (`ml/services/investigation_repository.py`) — SQLite persistence layer using Repository Pattern; auto-creates `storage/fraudshield.db`; full CRUD (create, save, get, list, get_latest, update_status, delete, exists); `INV-YYYYMMDD-NNNN` ID generation; dataclass models; parameterised queries; 20 unit tests passing
 
 ---
 

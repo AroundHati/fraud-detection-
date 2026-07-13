@@ -2,8 +2,6 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/use-auth";
 
 const trustBadges = [
   "Explainable AI",
@@ -19,18 +17,6 @@ const platformStats = [
 ];
 
 export default function Home() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-
-  const handleStartInvestigating = () => {
-    if (loading) return;
-    if (user) {
-      router.push("/dashboard");
-    } else {
-      router.push("/login");
-    }
-  };
-
   return (
     <main className="min-h-screen overflow-hidden bg-background text-text-primary">
       <header className="border-b border-border bg-surface">
@@ -83,16 +69,15 @@ export default function Home() {
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-4">
-            <button
-              onClick={handleStartInvestigating}
-              disabled={loading}
-              className="inline-flex items-center justify-center rounded-md bg-primary px-8 py-4 text-sm font-semibold text-primary-foreground shadow-md transition-colors hover:bg-primary-dark disabled:opacity-50"
+            <Link
+              href="/login"
+              className="inline-flex items-center justify-center rounded-md bg-primary px-8 py-4 text-sm font-semibold text-primary-foreground shadow-md transition-colors hover:bg-primary-dark"
             >
               Start Investigating
               <span className="ml-2" aria-hidden="true">
                 -&gt;
               </span>
-            </button>
+            </Link>
           </div>
 
           <div className="mt-8 flex flex-wrap items-center gap-6">

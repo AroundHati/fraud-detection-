@@ -15,11 +15,11 @@ export function InvestigationHeader({ provider }: Props) {
   return (
     <div className="space-y-4">
       <Link
-        href="/analyze"
+        href="/investigations"
         className="inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary transition-colors hover:text-primary"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to Analysis
+        Back to Investigations
       </Link>
 
       <div className="rounded-xl border border-border bg-surface p-6 shadow-sm">
