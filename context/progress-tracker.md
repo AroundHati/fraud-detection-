@@ -7,13 +7,13 @@ Update this file after every completed feature. Any AI assistant reading this fi
 # Current Status
 
 **Current Phase:**
-Phase 3A — Investigation Details Redesign (In Progress)
+Phase 4A — Professional Investigation Report Generation (Complete)
 
 **Last Completed:**
-Phase 2A — Connected Workspace (commit `8ae0b6b`, tagged `v2.0-connected-workspace`)
+Phase 4A — PDF report generation with reportlab
 
 **Next Milestone:**
-Complete Phase 3A Investigation Details redesign, then commit to feature/fraud-analysis
+Commit Phase 4A, then proceed with remaining Phase 4 or Phase 5 work
 
 ---
 
@@ -83,10 +83,21 @@ Complete Phase 3A Investigation Details redesign, then commit to feature/fraud-a
 
 ---
 
+## Phase 4A — Professional Investigation Report Generation
+
+- [x] `ml/services/report_generator.py` — PDF generation service using reportlab; professional layout with branded header, executive summary, provider info, AI assessment, fraud indicators table, AI explanation narrative, recommendation with next actions, and legal disclaimer footer
+- [x] `ml/api/report.py` — FastAPI endpoint `POST /api/ml/investigations/{id}/report` returning PDF binary with Content-Disposition attachment header
+- [x] Report router mounted in `ml/api/analyze.py` via `app.include_router()`
+- [x] `lib/api.ts` — `generateReport(investigationId, providerId)` function calling the new endpoint
+- [x] Investigation Detail page — "Generate Report" button wired with loading state, auto-downloads PDF for selected or first provider
+- [x] `reportlab>=4.0.0` added to `ml/requirements.txt`
+
+---
+
 ## Phase 5 — Investigation Reports
 
 - [x] 18 Investigation Report — Full UI (report list, PDF/CSV export, risk scores)
-- [ ] 19 Report Generation
+- [x] 19 Report Generation — PDF generated via reportlab in `ml/services/report_generator.py`; served by FastAPI endpoint in `ml/api/report.py`; downloaded from frontend via `lib/api.ts` `generateReport()` and triggered by the "Generate Report" button
 - [ ] 20 Report Viewer
 
 ---
@@ -154,6 +165,7 @@ Complete Phase 3A Investigation Details redesign, then commit to feature/fraud-a
 - **Email verification is enabled** on the live InsForge instance (`requireEmailVerification: true`). Registered users must verify email before login.
 - **InsForge DB endpoints** use `/api/database/records/{table}` (NOT `/rest/v1/{table}`).
 - **InsForge storage** uses presigned URL upload strategy via `/api/storage/buckets/{bucket}/upload-strategy`.
+- **Phase 4A Report Generation** — Used reportlab (Python PDF library) for server-side PDF generation rather than client-side solutions (jspdf, @react-pdf/renderer). Reportlab provides full typographic control, proper table layouts, and professional print-quality output. The report endpoint is mounted into the existing analyze.py FastAPI app to avoid a third server process. Report generation triggers per-provider: the selected provider's data is sent to the backend, which fetches the full investigation from SQLite and generates the PDF.
 
 ---
 

@@ -12,7 +12,6 @@ import {
   FileText,
   Shield,
   Upload,
-  ArrowRight,
   Info,
   Home,
   FolderSearch,
@@ -21,6 +20,8 @@ import {
   Stethoscope,
   DollarSign,
   ClipboardList,
+  Download,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SectionCard } from "@/components/ui/SectionCard";
@@ -28,7 +29,7 @@ import { StatusBadge, getStatusBadgeVariant } from "@/components/ui/StatusBadge"
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { Button } from "@/components/ui/Button";
-import { getInvestigation } from "@/lib/api";
+import { getInvestigation, generateReport } from "@/lib/api";
 import type { Investigation } from "@/lib/api";
 
 type FraudIndicator = {
@@ -137,6 +138,7 @@ export default function InvestigationDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
+  const [generatingReport, setGeneratingReport] = useState(false);
 
   useEffect(() => {
     getInvestigation(investigationId)
@@ -213,6 +215,25 @@ export default function InvestigationDetailPage() {
   );
 
   const selectedResult = results.find((r) => r.provider_id === selectedProvider);
+
+  const handleGenerateReport = async (providerId: string) => {
+    setGeneratingReport(true);
+    try {
+      const blob = await generateReport(investigationId, providerId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `FraudShield-Report-${investigationId}-${providerId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      // Error silently handled — report generation failure does not crash the page
+    } finally {
+      setGeneratingReport(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -526,9 +547,25 @@ export default function InvestigationDetailPage() {
       <SectionCard
         title="Recommendation"
         headerRight={
-          <Button size="sm">
-            Generate Report
-            <ArrowRight className="h-4 w-4" />
+          <Button
+            size="sm"
+            onClick={() => {
+              const target = selectedProvider ?? results[0]?.provider_id;
+              if (target) handleGenerateReport(target);
+            }}
+            disabled={generatingReport || results.length === 0}
+          >
+            {generatingReport ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4" />
+                Generate Report
+              </>
+            )}
           </Button>
         }
       >
@@ -538,6 +575,11 @@ export default function InvestigationDetailPage() {
             : mediumRisk.length > 0
               ? `${mediumRisk.length} provider(s) flagged for priority review. Generate a report to track the investigation and document any findings.`
               : "All providers within normal risk thresholds. No immediate action required. Consider generating a report for documentation purposes."}
+          {selectedProvider && (
+            <span className="ml-1 text-xs text-text-muted">
+              Report will be generated for Provider {selectedProvider}.
+            </span>
+          )}
         </p>
       </SectionCard>
     </div>

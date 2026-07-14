@@ -70,3 +70,22 @@ export async function getInvestigationStats(): Promise<InvestigationStats> {
   if (!res.ok) throw new Error("Failed to fetch stats");
   return res.json();
 }
+
+export async function generateReport(
+  investigationId: string,
+  providerId: string,
+): Promise<Blob> {
+  const res = await fetch(
+    `${ML_API_BASE}/investigations/${investigationId}/report`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ provider_id: providerId }),
+    },
+  );
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.detail ?? "Failed to generate report");
+  }
+  return res.blob();
+}

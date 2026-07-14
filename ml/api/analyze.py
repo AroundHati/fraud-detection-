@@ -42,6 +42,10 @@ _SERVICES_DIR = Path(__file__).resolve().parent.parent / "services"
 if str(_SERVICES_DIR) not in sys.path:
     sys.path.insert(0, str(_SERVICES_DIR))
 
+_API_DIR = Path(__file__).resolve().parent
+if str(_API_DIR) not in sys.path:
+    sys.path.insert(0, str(_API_DIR))
+
 from pipeline import Pipeline, PipelineError  # noqa: E402
 from investigation_repository import (  # noqa: E402
     InvestigationRepository,
@@ -50,6 +54,7 @@ from investigation_repository import (  # noqa: E402
     InvestigationNotFoundError,
     InvalidInvestigationError,
 )
+from report import router as report_router  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +76,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount the report generation router.
+app.include_router(report_router)
 
 # ---------------------------------------------------------------------------
 # Lazy-loaded singletons
