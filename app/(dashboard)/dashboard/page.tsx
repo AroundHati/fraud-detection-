@@ -2,17 +2,30 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Upload, Search, FileText, Clock } from "lucide-react";
-import { useUser } from "@/hooks/use-user";
+import {
+  Upload,
+  Search,
+  FileText,
+  ChevronRight,
+  Activity,
+  Building2,
+  AlertTriangle,
+  Calendar,
+} from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { Button } from "@/components/ui/Button";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import {
+  StatusBadge,
+  getStatusBadgeVariant,
+} from "@/components/ui/StatusBadge";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { getInvestigationStats, listInvestigations } from "@/lib/api";
+import { formatDate } from "@/lib/utils";
 import type { InvestigationStats, Investigation } from "@/lib/api";
 
 export default function DashboardPage() {
-  const { displayName } = useUser();
   const [stats, setStats] = useState<InvestigationStats | null>(null);
   const [recent, setRecent] = useState<Investigation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,12 +41,20 @@ export default function DashboardPage() {
   }, []);
 
   const hasData = stats !== null && stats.total > 0;
+  const totalProviders =
+    (stats?.high_risk_total ?? 0) +
+    (stats?.medium_risk_total ?? 0) +
+    (stats?.low_risk_total ?? 0);
+
+  if (loading) {
+    return <LoadingState message="Loading dashboard..." />;
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
         title="Dashboard"
-        description="Overview of your fraud detection workspace."
+        description="Monitor healthcare claim analyses and review AI-powered fraud detection results."
         actions={
           <Link href="/upload">
             <Button>
@@ -44,216 +65,230 @@ export default function DashboardPage() {
         }
       />
 
-      {/* Workspace Header */}
-      <SectionCard>
-        <h2 className="text-base font-semibold text-text-primary">
-          Welcome back, {displayName}
-        </h2>
-        <p className="mt-1 text-sm text-text-secondary">
-          Detect suspicious billing patterns, run fraud investigations, and
-          generate explainable AI reports from a single workspace.
-        </p>
-      </SectionCard>
-
-      {/* Workspace Overview */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <SectionCard className="py-0">
-          <div className="flex items-center gap-3 py-4">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-light">
-              <Search className="h-5 w-5 text-primary" />
+      <SectionCard title="Detection Overview">
+        {!hasData ? (
+          <div className="py-12 text-center">
+            <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-secondary">
+              <FileText className="h-7 w-7 text-text-muted" />
             </span>
-            <div>
-              <p className="text-xs font-medium text-text-muted">
-                Investigations
-              </p>
-              <p className="text-lg font-bold text-text-primary">
-                {loading ? "\u2014" : stats?.total ?? 0}
-              </p>
-            </div>
-          </div>
-        </SectionCard>
-
-        <SectionCard className="py-0">
-          <div className="flex items-center gap-3 py-4">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-success-light">
-              <FileText className="h-5 w-5 text-success" />
-            </span>
-            <div>
-              <p className="text-xs font-medium text-text-muted">Reports</p>
-              <p className="text-lg font-bold text-text-primary">
-                {loading ? "\u2014" : stats?.completed ?? 0}
-              </p>
-            </div>
-          </div>
-        </SectionCard>
-
-        <SectionCard className="py-0">
-          <div className="flex items-center gap-3 py-4">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-secondary">
-              <Clock className="h-5 w-5 text-text-muted" />
-            </span>
-            <div>
-              <p className="text-xs font-medium text-text-muted">
-                Last Analysis
-              </p>
-              <p className="text-sm font-medium text-text-muted">
-                {loading
-                  ? "Not available"
-                  : recent.length > 0
-                    ? new Date(recent[0].created_at).toLocaleDateString()
-                    : "Not available"}
-              </p>
-            </div>
-          </div>
-        </SectionCard>
-      </div>
-
-      {/* Investigation Overview + Analysis Overview */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <SectionCard
-          title="Investigations"
-          headerRight={
-            <Link href="/investigations">
-              <Button variant="secondary" size="sm">
-                View Investigations
-              </Button>
-            </Link>
-          }
-        >
-          {!loading && !hasData && (
-            <>
-              <p className="text-sm text-text-secondary">
-                No investigations available.
-              </p>
-              <p className="mt-1 text-sm text-text-secondary">
-                Investigations will automatically appear here after a claims
-                file has been analyzed.
-              </p>
-            </>
-          )}
-          {!loading && hasData && (
-            <div className="divide-y divide-border rounded-lg border border-border">
-              {recent.map((inv) => (
-                <Link
-                  key={inv.investigation_id}
-                  href={`/investigations/${inv.investigation_id}`}
-                  className="flex items-center justify-between px-4 py-3 transition-colors hover:bg-surface-secondary"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-primary">
-                      {inv.investigation_id}
-                    </p>
-                    <p className="text-xs text-text-muted">
-                      {inv.uploaded_filename || "Unknown file"} &middot;{" "}
-                      {inv.provider_count} providers
-                    </p>
-                  </div>
-                  <StatusBadge
-                    label={inv.status}
-                    variant={inv.status === "completed" ? "success" : "default"}
-                    dot
-                  />
-                </Link>
-              ))}
-            </div>
-          )}
-        </SectionCard>
-
-        <SectionCard
-          title="Analysis"
-          headerRight={
-            <Link href="/upload">
-              <Button variant="secondary" size="sm">
+            <p className="mt-5 text-[15px] font-medium text-text-primary">
+              No healthcare claims have been analyzed yet
+            </p>
+            <p className="mt-1.5 text-sm text-text-secondary">
+              Upload a claims dataset to begin AI-powered fraud detection.
+            </p>
+            <Link href="/upload" className="mt-6 inline-block">
+              <Button>
+                <Upload className="h-4 w-4" />
                 Upload Claims
               </Button>
             </Link>
-          }
-        >
-          {!loading && !hasData && (
-            <>
-              <p className="text-sm text-text-secondary">
-                No claims have been analyzed yet.
-              </p>
-              <p className="mt-1 text-sm text-text-secondary">
-                Upload a healthcare claims CSV to begin fraud detection.
-              </p>
-            </>
-          )}
-          {!loading && hasData && (
-            <>
-              <p className="text-sm text-text-secondary">
-                {stats?.total ?? 0} investigation(s) completed across all
-                uploads.
-              </p>
-              <p className="mt-1 text-sm text-text-secondary">
-                {stats?.high_risk_total ?? 0} high risk &middot;{" "}
-                {stats?.medium_risk_total ?? 0} medium risk &middot;{" "}
-                {stats?.low_risk_total ?? 0} low risk
-              </p>
-            </>
-          )}
-        </SectionCard>
-      </div>
-
-      {/* Reports Overview + Recent Activity */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <SectionCard
-          title="Reports"
-          headerRight={
-            <Link href="/reports">
-              <Button variant="secondary" size="sm">
-                View Reports
-              </Button>
-            </Link>
-          }
-        >
-          {!loading && (stats?.completed ?? 0) === 0 && (
-            <>
-              <p className="text-sm text-text-secondary">
-                No reports have been generated.
-              </p>
-              <p className="mt-1 text-sm text-text-secondary">
-                Reports become available after an investigation has been
-                completed.
-              </p>
-            </>
-          )}
-          {!loading && (stats?.completed ?? 0) > 0 && (
-            <p className="text-sm text-text-secondary">
-              {stats?.completed ?? 0} completed investigation(s) available as
-              reports.
-            </p>
-          )}
-        </SectionCard>
-
-        <SectionCard title="Recent Activity">
-          {!loading && recent.length === 0 && (
-            <>
-              <p className="text-sm text-text-secondary">No recent activity.</p>
-              <p className="mt-1 text-sm text-text-secondary">
-                Your uploads, investigations, and generated reports will appear
-                here.
-              </p>
-            </>
-          )}
-          {!loading && recent.length > 0 && (
-            <div className="space-y-2">
-              {recent.slice(0, 3).map((inv) => (
-                <div
-                  key={inv.investigation_id}
-                  className="flex items-center justify-between text-sm"
-                >
-                  <span className="text-text-secondary">
-                    {inv.uploaded_filename || "CSV upload"}
-                  </span>
-                  <span className="text-xs text-text-muted">
-                    {new Date(inv.created_at).toLocaleDateString()}
-                  </span>
+          </div>
+        ) : (
+          <div>
+            <div className="flex items-center justify-between px-5 py-4">
+              <div className="flex items-center gap-4">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-light">
+                  <FileText className="h-5 w-5 text-primary" />
+                </span>
+                <div>
+                  <p className="text-sm font-medium text-text-primary">
+                    Claims analyzed
+                  </p>
+                  <p className="text-xs text-text-muted">
+                    Total uploaded datasets
+                  </p>
                 </div>
-              ))}
+              </div>
+              <span className="text-xl font-bold tabular-nums text-text-primary">
+                {stats?.total ?? 0}
+              </span>
             </div>
-          )}
-        </SectionCard>
+
+            <div className="border-t border-border" />
+
+            <div className="flex items-center justify-between px-5 py-4">
+              <div className="flex items-center gap-4">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-light">
+                  <Building2 className="h-5 w-5 text-teal-foreground" />
+                </span>
+                <div>
+                  <p className="text-sm font-medium text-text-primary">
+                    Providers analyzed
+                  </p>
+                  <p className="text-xs text-text-muted">
+                    Unique across all datasets
+                  </p>
+                </div>
+              </div>
+              <span className="text-xl font-bold tabular-nums text-text-primary">
+                {totalProviders}
+              </span>
+            </div>
+
+            <div className="border-t border-border" />
+
+            <div className="flex items-center justify-between px-5 py-4">
+              <div className="flex items-center gap-4">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-error-light">
+                  <AlertTriangle className="h-5 w-5 text-error" />
+                </span>
+                <div>
+                  <p className="text-sm font-medium text-text-primary">
+                    Providers flagged
+                  </p>
+                  <p className="text-xs text-text-muted">
+                    High risk detections
+                  </p>
+                </div>
+              </div>
+              <span className="text-xl font-bold tabular-nums text-text-primary">
+                {stats?.high_risk_total ?? 0}
+              </span>
+            </div>
+
+            <div className="border-t border-border" />
+
+            <div className="flex items-center justify-between px-5 py-4">
+              <div className="flex items-center gap-4">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-secondary">
+                  <Calendar className="h-5 w-5 text-text-muted" />
+                </span>
+                <div>
+                  <p className="text-sm font-medium text-text-primary">
+                    Last analysis date
+                  </p>
+                  <p className="text-xs text-text-muted">
+                    Most recent upload
+                  </p>
+                </div>
+              </div>
+              <span className="text-sm font-medium text-text-secondary">
+                {recent.length > 0
+                  ? formatDate(recent[0].created_at)
+                  : "Not available"}
+              </span>
+            </div>
+          </div>
+        )}
+      </SectionCard>
+
+      <SectionCard title="Recent Detection Activity">
+        {!hasData ? (
+          <EmptyState
+            title="No recent activity"
+            description="Completed analyses will appear here after you upload and analyze a claims dataset."
+            icon={<Activity className="h-7 w-7 text-text-muted" />}
+          />
+        ) : (
+          <div className="overflow-hidden rounded-lg border border-border">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border bg-surface-secondary">
+                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-muted">
+                    Investigation
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-muted">
+                    File
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-muted">
+                    Date
+                  </th>
+                  <th className="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-text-muted">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {recent.map((inv) => (
+                  <tr
+                    key={inv.investigation_id}
+                    className="group cursor-pointer transition-colors hover:bg-surface-secondary/50"
+                  >
+                    <td className="px-5 py-3.5">
+                      <Link
+                        href={`/investigations/${inv.investigation_id}`}
+                        className="text-sm font-medium text-primary transition-colors group-hover:text-primary-dark"
+                      >
+                        {inv.investigation_id}
+                      </Link>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <span className="text-sm text-text-secondary truncate max-w-[200px] block">
+                        {inv.uploaded_filename || "Unknown file"}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <span className="text-sm text-text-muted">
+                        {formatDate(inv.created_at)}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5 text-right">
+                      <StatusBadge
+                        label={inv.status}
+                        variant={getStatusBadgeVariant(inv.status)}
+                        dot
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Link href="/upload" className="group">
+          <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-md">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary-light transition-colors group-hover:bg-primary/15">
+              <Upload className="h-5 w-5 text-primary" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-text-primary transition-colors group-hover:text-primary">
+                Upload Claims
+              </p>
+              <p className="mt-0.5 text-xs leading-relaxed text-text-muted">
+                Submit healthcare claims for AI analysis
+              </p>
+            </div>
+            <ChevronRight className="h-4 w-4 shrink-0 text-text-muted transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary" />
+          </div>
+        </Link>
+
+        <Link href="/investigations" className="group">
+          <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-md">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-teal-light transition-colors group-hover:bg-teal/15">
+              <Search className="h-5 w-5 text-teal-foreground" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-text-primary transition-colors group-hover:text-primary">
+                Investigations
+              </p>
+              <p className="mt-0.5 text-xs leading-relaxed text-text-muted">
+                Review AI-powered fraud detection results
+              </p>
+            </div>
+            <ChevronRight className="h-4 w-4 shrink-0 text-text-muted transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary" />
+          </div>
+        </Link>
+
+        <Link href="/reports" className="group">
+          <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-md">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-success-light transition-colors group-hover:bg-success/15">
+              <FileText className="h-5 w-5 text-success" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-text-primary transition-colors group-hover:text-primary">
+                Reports
+              </p>
+              <p className="mt-0.5 text-xs leading-relaxed text-text-muted">
+                Access generated investigation reports
+              </p>
+            </div>
+            <ChevronRight className="h-4 w-4 shrink-0 text-text-muted transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary" />
+          </div>
+        </Link>
       </div>
     </div>
   );

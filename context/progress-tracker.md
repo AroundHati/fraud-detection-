@@ -7,13 +7,13 @@ Update this file after every completed feature. Any AI assistant reading this fi
 # Current Status
 
 **Current Phase:**
-Phase 4A — Professional Investigation Report Generation (Complete)
+Dashboard Redesign (Complete)
 
 **Last Completed:**
-Phase 4A — PDF report generation with reportlab
+Dashboard redesign — clean landing page with Detection Overview, Recent Detection Activity, and Quick Access sections using only real backend data
 
 **Next Milestone:**
-Commit Phase 4A, then proceed with remaining Phase 4 or Phase 5 work
+Proceed with remaining Phase 4 or Phase 5 work
 
 ---
 
@@ -112,6 +112,7 @@ Commit Phase 4A, then proceed with remaining Phase 4 or Phase 5 work
 
 ## Additional Features Completed
 
+- [x] Dashboard Redesign — Clean landing page with Detection Overview (compact rows: claims analyzed, providers analyzed, providers flagged, last analysis date), Recent Detection Activity (clickable list with ID, filename, date, status badge), and Quick Access cards (Upload Claims, Investigations, Reports). Empty states for first-time users. No fake data, no charts, no oversized KPI cards.
 - [x] UI Foundation Redesign — Removed all fake/mock data, deleted dead pages/components, created `components/ui/` library (Button, EmptyState, PageHeader, SectionCard, StatusBadge, DataTable, LoadingState)
 - [x] Sidebar — Exactly 4 items: Dashboard, Upload Claims, Investigations, Reports
 - [x] Auth Redirect — `middleware.ts` covers `/`, landing page cleaned

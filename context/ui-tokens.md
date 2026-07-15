@@ -98,6 +98,12 @@ className="bg-[#2563EB]"
   --color-info-light: #DBEAFE;
   --color-info-foreground: #1D4ED8;
 
+  /* Teal */
+
+  --color-teal: #14B8A6;
+  --color-teal-light: #CCFBF1;
+  --color-teal-foreground: #134E4A;
+
   /* Radius */
 
   --radius-sm: 6px;

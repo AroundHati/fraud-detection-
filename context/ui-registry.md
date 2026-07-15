@@ -79,23 +79,29 @@ The homepage follows the reference landing composition: token-backed top navigat
 ### Dashboard Layout
 
 File: `components/layout/DashboardLayout.tsx`
-Last updated: July 10, 2026
+Last updated: July 15, 2026
 
 | Property | Class |
 | --- | --- |
 | Sidebar background | `bg-surface` |
-| Sidebar width | `w-[260px]` |
+| Sidebar width | `w-[240px]` |
 | Sidebar border | `border-r border-border` |
-| Active nav item | `bg-primary-light text-primary` |
-| Inactive nav item | `text-text-secondary hover:bg-surface-secondary hover:text-text-primary` |
-| Top navbar height | `h-16` |
+| Logo area height | `h-[60px]` with `px-5` |
+| Logo SVG | Inline shield + cross, `h-7 w-7`, primary blue fill |
+| Logo text | `text-[15px] font-bold text-text-primary` |
+| Logo subtitle | `text-[10px] font-medium text-text-muted` |
+| Active nav item | `bg-primary-light text-primary rounded-lg` |
+| Inactive nav item | `text-text-secondary hover:bg-surface-secondary hover:text-text-primary rounded-lg` |
+| Nav item padding | `px-3 py-2.5` with `gap-3` |
+| Nav icon size | `h-[18px] w-[18px]` |
+| Top navbar height | `h-[60px]` |
 | Top navbar border | `border-b border-border` |
-| Avatar | `h-9 w-9 rounded-full bg-primary text-primary-foreground text-sm font-semibold` |
-| Dropdown | `w-56 rounded-lg border border-border bg-surface p-1.5 shadow-lg` |
-| Mobile menu toggle | `md:hidden` responsive breakpoint |
+| Avatar | `h-8 w-8 rounded-full bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20` |
+| Dropdown | `w-52 rounded-lg border border-border bg-surface p-1.5 shadow-lg` |
+| Content area | `p-8` |
 
 **Pattern notes:**
-The dashboard layout wraps all authenticated pages. It includes a left sidebar with navigation links (each with a Lucide icon), a top navbar with notification bell (with red dot indicator) and user avatar dropdown (Profile, Settings, Logout). Mobile responsive with slide-out sidebar overlay.
+The dashboard layout wraps all authenticated pages. It includes a left sidebar with a professional SVG shield+cross logo, "FraudShield" title and "AI-Powered Fraud Detection" subtitle. Navigation uses rounded-lg items with 18px icons. The top navbar has a subtle avatar with primary/10 background. Mobile responsive with slide-out sidebar overlay.
 
 ---
 
@@ -124,23 +130,31 @@ Auth pages use a two-column split layout. The left column shows FraudShield bran
 ### Dashboard Page
 
 File: `app/(dashboard)/dashboard/page.tsx`
-Last updated: July 13, 2026
+Last updated: July 15, 2026
 
 | Property | Class |
 | --- | --- |
-| Welcome card | `rounded-xl border border-border bg-surface p-6 shadow-sm` |
-| Quick action card | `rounded-xl border border-border bg-surface p-5 shadow-sm hover:border-primary/20 hover:shadow-md` |
-| Quick action icon | `flex h-11 w-11 items-center justify-center rounded-lg` with token bg |
-| Quick action label | `text-sm font-semibold text-text-primary group-hover:text-primary` |
-| Empty state icon | `flex h-14 w-14 items-center justify-center rounded-xl bg-surface-secondary` |
-| Empty state title | `text-base font-semibold text-text-primary` |
-| Empty state description | `max-w-sm text-sm text-text-secondary` |
-| System status card | `rounded-xl border border-border bg-surface p-5 shadow-sm` |
-| System status indicator | `h-2 w-2 rounded-full bg-success` with `text-xs font-medium text-text-secondary` |
-| Section title | `text-base font-semibold text-text-primary` |
+| Page section gap | `space-y-8` |
+| Detection overview row | `flex items-center justify-between px-5 py-4` |
+| Overview icon container | `flex h-10 w-10 shrink-0 items-center justify-center rounded-full` with token bg |
+| Overview label | `text-sm font-medium text-text-primary` |
+| Overview sublabel | `text-xs text-text-muted` |
+| Overview value | `text-xl font-bold tabular-nums text-text-primary` |
+| Row divider | `border-t border-border` |
+| Activity table | `overflow-hidden rounded-lg border border-border` |
+| Table header | `bg-surface-secondary` with `px-5 py-3 text-xs font-medium uppercase tracking-wider text-text-muted` |
+| Table row | `group cursor-pointer transition-colors hover:bg-surface-secondary/50` |
+| Table cell | `px-5 py-3.5 text-sm` |
+| Quick access card | `rounded-xl border border-border bg-surface p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-md` |
+| Quick access icon | `flex h-12 w-12 shrink-0 items-center justify-center rounded-xl` with token bg, `transition-colors group-hover:bg-{color}/15` |
+| Quick access title | `text-sm font-semibold text-text-primary transition-colors group-hover:text-primary` |
+| Quick access description | `mt-0.5 text-xs leading-relaxed text-text-muted` |
+| Quick access arrow | `h-4 w-4 shrink-0 text-text-muted transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary` |
+| Empty state icon | `inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-secondary` |
+| Empty state title | `mt-5 text-[15px] font-medium text-text-primary` |
 
 **Pattern notes:**
-The dashboard is the operational home page for investigators. It replaces template statistics with workflow-oriented sections: welcome message (personalized via `useUser()`), latest investigation card (empty state until persistence is wired), four quick action cards navigating to core pages, recent investigations list (empty state), and system status cards showing ML model, FastAPI, AI assistant, and auth health. No hardcoded numerical data is displayed.
+Enterprise-grade landing page for FraudShield. Detection Overview uses circular icon containers (rounded-full) with teal brand color for providers analyzed. Rows are separated by subtle border-t dividers instead of individual bordered cards. Numbers use text-xl font-bold tabular-nums. Recent Activity renders as a proper table with sticky header, uppercase column labels, and premium hover states (hover:bg-surface-secondary/50 with group cursor-pointer). Quick Access cards use rounded-xl icon containers, hover:-translate-y-0.5 for subtle lift, and group-hover:translate-x-0.5 on arrows. Page uses space-y-8 for generous section spacing.
 
 ---
 
@@ -266,20 +280,25 @@ Enterprise copilot-style chat interface. Renders a header with bot icon, a scrol
 
 ## Shared UI Patterns
 
-- Landing navigation: `bg-surface`, `border-b border-border`, `h-16`, `max-w-[1440px]`, `px-6`.
+- Landing navigation: `bg-surface`, `border-b border-border`, `h-[60px]`, `max-w-[1440px]`, `px-6`.
 - Primary CTA: `bg-primary text-primary-foreground rounded-md px-8 py-4 font-semibold hover:bg-primary-dark`.
 - Secondary CTA: `bg-surface border border-border text-primary rounded-md px-8 py-4 hover:bg-surface-secondary`.
 - Dashboard preview frame: `bg-surface border border-border rounded-xl p-2 shadow-lg`.
 - Metric strip: `bg-surface border-t border-border`, compact marker in `bg-primary-light text-primary`, value in `text-primary`.
 - Dashboard card: `rounded-xl border border-border bg-surface p-6 shadow-sm`.
 - Status badge: `rounded-full px-2.5 py-0.5 text-xs font-medium`.
-- Sidebar nav item: `flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors`.
+- Sidebar nav item: `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all`.
+- Sidebar logo: Inline SVG shield+cross with `h-7 w-7`, title `text-[15px] font-bold`, subtitle `text-[10px] font-medium text-text-muted`.
+- Avatar: `h-8 w-8 rounded-full bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20`.
 - Avatar dropdown item: `flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-surface-secondary`.
 - Investigation detail card: `rounded-xl border border-border bg-surface p-6 shadow-sm` with section header `text-base font-semibold text-text-primary`.
 - Fraud indicator row: `flex items-start gap-3 rounded-lg border border-border p-3.5` with status icon container `flex h-7 w-7 shrink-0 items-center justify-center rounded-lg`.
 - Severity badge: `inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold` with token-backed severity colors.
 - Recommendation banner: `rounded-lg border p-4` with level-specific border color and icon container.
 - AI Investigation Assistant: `rounded-xl border border-border bg-surface shadow-sm` with header `border-b border-border px-6 py-4`, chat area `flex h-[400px] flex-col overflow-y-auto`, and suggested questions as `rounded-lg border border-border bg-surface p-3` with hover states.
+- Quick access card: `rounded-xl border border-border bg-surface p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-md` with `rounded-xl` icon containers and `group-hover:translate-x-0.5` arrow.
+- Detection overview row: `flex items-center justify-between px-5 py-4` with `rounded-full` icon containers and `border-t border-border` dividers.
+- Activity table: `overflow-hidden rounded-lg border border-border` with `bg-surface-secondary` header and `hover:bg-surface-secondary/50` row hover.
 
 ---
 
@@ -294,3 +313,10 @@ Record reusable design decisions made during implementation.
 - All form inputs use consistent height (`h-11`), border radius (`rounded-md`), and token-backed styling.
 - Auth pages use a split layout that collapses to single column on mobile.
 - The dashboard layout is a full-height flex container with sidebar, top navbar, and scrollable main content area.
+- The FraudShield logo uses an inline SVG shield with a healthcare cross, rendered at `h-7 w-7` with primary blue fill.
+- Detection Overview uses `rounded-full` icon containers and `border-t border-border` dividers for an elegant, non-card-based layout.
+- Quick Access cards use `hover:-translate-y-0.5` for subtle elevation and `group-hover:translate-x-0.5` for arrow animation.
+- Recent Activity uses a proper `<table>` element with `hover:bg-surface-secondary/50` for premium row interaction.
+- The teal brand color (#14B8A6) is used for the "Providers analyzed" icon and the Investigations quick access card.
+- Numbers in Detection Overview use `text-xl font-bold tabular-nums` for strong, aligned presentation.
+- Content area uses `p-8` for generous breathing room between sidebar and page content.
