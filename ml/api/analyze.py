@@ -24,7 +24,6 @@ from __future__ import annotations
 
 import io
 import logging
-import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -34,27 +33,15 @@ from pydantic import BaseModel
 
 import pandas as pd
 
-# ---------------------------------------------------------------------------
-# Path setup — ensure ``services`` is importable when running via uvicorn.
-# ---------------------------------------------------------------------------
-
-_SERVICES_DIR = Path(__file__).resolve().parent.parent / "services"
-if str(_SERVICES_DIR) not in sys.path:
-    sys.path.insert(0, str(_SERVICES_DIR))
-
-_API_DIR = Path(__file__).resolve().parent
-if str(_API_DIR) not in sys.path:
-    sys.path.insert(0, str(_API_DIR))
-
-from pipeline import Pipeline, PipelineError  # noqa: E402
-from investigation_repository import (  # noqa: E402
+from ml.services.pipeline import Pipeline, PipelineError
+from ml.services.investigation_repository import (
     InvestigationRepository,
     InvestigationCreate,
     InvestigationRepositoryError,
     InvestigationNotFoundError,
     InvalidInvestigationError,
 )
-from report import router as report_router  # noqa: E402
+from ml.api.report import router as report_router
 
 logger = logging.getLogger(__name__)
 

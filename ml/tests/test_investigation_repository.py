@@ -9,13 +9,10 @@ from __future__ import annotations
 
 import os
 import sqlite3
-import sys
 import tempfile
 from pathlib import Path
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
-from services.investigation_repository import (
+from ml.services.investigation_repository import (
     InvestigationRepository,
     InvestigationCreate,
     Investigation,

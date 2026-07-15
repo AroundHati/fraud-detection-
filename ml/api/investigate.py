@@ -20,23 +20,13 @@ Start the server
 from __future__ import annotations
 
 import logging
-import sys
-from pathlib import Path
 from typing import Any, Dict, List
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-# ---------------------------------------------------------------------------
-# Path setup — ensure ``services`` is importable when running via uvicorn.
-# ---------------------------------------------------------------------------
-
-_SERVICES_DIR = Path(__file__).resolve().parent.parent / "services"
-if str(_SERVICES_DIR) not in sys.path:
-    sys.path.insert(0, str(_SERVICES_DIR))
-
-from investigation_agent import (  # noqa: E402
+from ml.services.investigation_services import (
     InvestigationAgent,
     InvestigationAgentError,
 )

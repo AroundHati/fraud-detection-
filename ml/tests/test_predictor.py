@@ -1,10 +1,7 @@
 """Unit tests for Predictor."""
-import sys
-sys.path.insert(0, "ml")
-
 import numpy as np
 import pandas as pd
-from services.predictor import Predictor, PredictorError, ModelLoadError
+from ml.services.predictor import Predictor, PredictorError, ModelLoadError
 
 # Ensure singleton cache is fresh.
 Predictor._reset()

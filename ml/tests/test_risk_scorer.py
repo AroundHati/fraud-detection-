@@ -1,8 +1,5 @@
 """Comprehensive unit tests for RiskScorer and RiskConfig."""
-import sys
-sys.path.insert(0, "ml")
-
-from services.risk_scorer import RiskScorer, RiskConfig, RiskScorerError, DEFAULT_CONFIG
+from ml.services.risk_scorer import RiskScorer, RiskConfig, RiskScorerError, DEFAULT_CONFIG
 
 scorer = RiskScorer()
 

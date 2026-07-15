@@ -1,9 +1,8 @@
 """End-to-end test for the FastAPI analyze endpoint."""
-import sys, json
-sys.path.insert(0, "ml")
+import json
 
 from fastapi.testclient import TestClient
-from api.analyze import app
+from ml.api.analyze import app
 
 client = TestClient(app)
 

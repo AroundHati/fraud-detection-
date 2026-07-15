@@ -1,9 +1,6 @@
 """Integration test for the full fraud detection pipeline."""
-import sys
-sys.path.insert(0, "ml")
-
 import pandas as pd
-from services.pipeline import Pipeline, PipelineResult
+from ml.services.pipeline import Pipeline, PipelineResult
 
 print("=" * 60)
 print("PIPELINE INTEGRATION TEST")

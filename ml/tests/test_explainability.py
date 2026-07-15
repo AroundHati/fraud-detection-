@@ -1,8 +1,5 @@
 """Comprehensive unit tests for ExplainabilityEngine and ExplainabilityConfig."""
-import sys
-sys.path.insert(0, "ml")
-
-from services.explainability import (
+from ml.services.explainability import (
     ExplainabilityEngine,
     ExplainabilityConfig,
     ExplainabilityError,

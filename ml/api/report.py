@@ -19,8 +19,6 @@ This module is mounted into the main ``analyze:app`` via ``include_router``.
 from __future__ import annotations
 
 import logging
-import sys
-from pathlib import Path
 from typing import Any, Dict
 
 from fastapi import APIRouter, HTTPException
@@ -28,17 +26,9 @@ from fastapi.responses import Response
 
 from pydantic import BaseModel
 
+from ml.services.report_generator import generate_report
+
 logger = logging.getLogger(__name__)
-
-# ---------------------------------------------------------------------------
-# Path setup
-# ---------------------------------------------------------------------------
-
-_SERVICES_DIR = Path(__file__).resolve().parent.parent / "services"
-if str(_SERVICES_DIR) not in sys.path:
-    sys.path.insert(0, str(_SERVICES_DIR))
-
-from report_generator import generate_report  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Router
@@ -91,7 +81,7 @@ async def generate_investigation_report(
     500 — PDF generation failure.
     """
     # Lazy-import the repository to avoid circular imports.
-    from investigation_repository import (  # noqa: E402
+    from ml.services.investigation_repository import (
         InvestigationRepository,
         InvalidInvestigationError,
         InvestigationNotFoundError,

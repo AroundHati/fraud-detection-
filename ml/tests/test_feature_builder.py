@@ -1,10 +1,7 @@
 """Quick smoke tests for FeatureBuilder."""
-import sys
-sys.path.insert(0, "ml")
-
 import pandas as pd
 import numpy as np
-from services.feature_builder import FeatureBuilder, FeatureBuilderError
+from ml.services.feature_builder import FeatureBuilder, FeatureBuilderError
 
 fb = FeatureBuilder()
 

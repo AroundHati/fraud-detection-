@@ -24,7 +24,7 @@ import numpy as np
 import pandas as pd
 from xgboost import XGBClassifier
 
-from services.feature_builder import FeatureBuilder, FeatureBuilderError
+from ml.services.feature_builder import FeatureBuilder, FeatureBuilderError
 
 logger = logging.getLogger(__name__)
 
