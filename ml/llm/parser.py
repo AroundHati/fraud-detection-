@@ -47,13 +47,47 @@ class ResponseParser:
         """
         logger.debug("parse_json() — input length=%d", len(raw))
 
-        # TODO: Implement robust JSON extraction.
-        #       1. Strip markdown code fences (```json ... ```).
-        #       2. Attempt json.loads() on the cleaned string.
-        #       3. If that fails, try to find the first '{' … last '}'.
-        #       4. If that fails, attempt to fix trailing commas.
-        #       5. Raise ParseError if nothing works.
-        raise ParseError("parse_json() is not yet implemented.")
+        if not raw or not raw.strip():
+            raise ParseError("Cannot parse empty or whitespace-only string")
+
+        cleaned = raw.strip()
+
+        # Step 1: Strip markdown code fences (```json ... ``` or ``` ... ```)
+        import re
+
+        fence_pattern = r"^```(?:json)?\s*\n?(.*?)\n?\s*```$"
+        fence_match = re.match(fence_pattern, cleaned, re.DOTALL)
+        if fence_match:
+            cleaned = fence_match.group(1).strip()
+
+        # Step 2: Direct parse attempt
+        try:
+            return json.loads(cleaned)
+        except json.JSONDecodeError:
+            pass
+
+        # Step 3: Find the first '{' and last '}'
+        first_brace = cleaned.find("{")
+        last_brace = cleaned.rfind("}")
+        if first_brace != -1 and last_brace > first_brace:
+            candidate = cleaned[first_brace : last_brace + 1]
+            try:
+                return json.loads(candidate)
+            except json.JSONDecodeError:
+                pass
+
+        # Step 4: Fix trailing commas (common LLM mistake)
+        fixed = re.sub(r",\s*([}\]])", r"\1", candidate if first_brace != -1 else cleaned)
+        try:
+            return json.loads(fixed)
+        except json.JSONDecodeError:
+            pass
+
+        # Step 5: Nothing worked
+        raise ParseError(
+            f"Failed to extract valid JSON from response "
+            f"(length={len(raw)}, preview={raw[:200]!r})"
+        )
 
     # ------------------------------------------------------------------
     # Typed validation
@@ -78,9 +112,18 @@ class ResponseParser:
         """
         logger.debug("validate_response() — target model=%s", model.__name__)
 
-        # TODO: Implement validation via model(**data) with
-        #       ValidationError handling.
-        raise ParseError("validate_response() is not yet implemented.")
+        try:
+            instance = model(**data)
+        except ValidationError as exc:
+            error_details = "; ".join(
+                f"{'.'.join(str(loc) for loc in e['loc'])}: {e['msg']}"
+                for e in exc.errors()
+            )
+            raise ParseError(
+                f"Validation failed for {model.__name__}: {error_details}"
+            ) from exc
+
+        return instance
 
     # ------------------------------------------------------------------
     # Safe parse (combined)
@@ -107,7 +150,23 @@ class ResponseParser:
         """
         logger.debug("safe_parse() — model=%s", model.__name__ if model else None)
 
-        # TODO: Implement a safe wrapper around parse_json() and
-        #       validate_response() that catches ParseError and returns
-        #       a sensible fallback.
-        raise ParseError("safe_parse() is not yet implemented.")
+        try:
+            data = ResponseParser.parse_json(raw)
+        except ParseError:
+            logger.warning(
+                "safe_parse() — JSON extraction failed, returning empty dict"
+            )
+            return {}
+
+        if model is None:
+            return data
+
+        try:
+            return ResponseParser.validate_response(data, model)
+        except ParseError as exc:
+            logger.warning(
+                "safe_parse() — validation failed for %s, returning raw dict: %s",
+                model.__name__,
+                exc,
+            )
+            return data
